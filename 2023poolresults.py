@@ -1,5 +1,6 @@
 #want to take each week and display the board for the users
 #want to them figure out who the winner is, and the touching winners
+#need to figure out how to do this for each week of data
 #calculate their prize money, then store the winners in a new SQL table
 
 import sqlite3
@@ -18,6 +19,10 @@ def print_grid(grid, week_x, week_y):
 # Connect to the database
 conn = sqlite3.connect('database.db')
 cursor = conn.cursor()
+
+#Retrieve giants scores for 2023
+cursor.execute('SELECT weekNum, giantsScore, opponetScore from giants2023')
+giantsResults = cursor.fetchall()
 
 # Retrieve the user data
 cursor.execute('SELECT id, xloc, yloc FROM users')
@@ -42,3 +47,6 @@ for row in userSelectedRows:
 
 # Print the grid with weekly numbers as headers
 print_grid(displayGrid, listX, listY)
+
+#Now need to show who the winner is for this week
+print(giantsResults)

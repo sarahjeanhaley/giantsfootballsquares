@@ -62,6 +62,11 @@ giantsScores = [{k: v for k, v in row.items() if k not in fields_to_remove} for 
 giantsScores = [row for row in giantsScores if row['Date'].lower() != 'bye']
 
 
+def remove_suffix(text, suffix):
+    if text.endswith(suffix):
+        return text[:-len(suffix)]
+    return text
+
 # Edit and split the 'Result' field into 'Outcome' and 'Score'
 for row in giantsScores:
     result_parts = row['Result'].split()  # Split the 'Result' field by whitespace
@@ -70,15 +75,15 @@ for row in giantsScores:
     
     scoreParts = row['Score'].split('–')  # Split the 'Result' field by whitespace
     row['GiantsScore'] = scoreParts[0]  # First part of 'Result'
-    row['OppponetScore'] = scoreParts[0][1:] # Remaining parts as 'Score'
+    row['OpponetScore'] = scoreParts[1] # Remaining parts as 'Score'
+    
     del row['Score']  # Remove the original 'Result' field
 
-
-# Print or process giantsScores as needed
-for row in giantsScores:
-    print(row)
+    if row['OpponetScore'].endswith("(OT)"):
+        row['OpponetScore'] = row['OpponetScore'][:-len("(OT)")]
 
 
+print(len(row['OpponetScore']))
 
 #Store boards in table
 conn = sqlite3.connect('database.db')
@@ -96,7 +101,6 @@ cursor.execute('''
         opponetScore INTEGER
     )
 ''')
-
 
 for row in giantsScores:
     weekNum = row.get('Week')
