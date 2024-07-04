@@ -19,10 +19,13 @@ def print_grid(grid, week_x, week_y):
 # Connect to the database
 conn = sqlite3.connect('database.db')
 cursor = conn.cursor()
+cursor2 = conn.cursor()
 
 #Retrieve giants scores for 2023
 cursor.execute('SELECT weekNum, giantsScore, opponetScore from giants2023')
 giantsResults = cursor.fetchall()
+
+cursor2.execute('INSERT INTO winner2023 (weekNum, user, winType, Amount) VALUES (?, ?, ?, ?)', (giantsResults[0][0], giantsResults[0][1], giantsResults[0][2], 100))
 
 # Retrieve the user data
 cursor.execute('SELECT id, xloc, yloc FROM users')
@@ -34,8 +37,7 @@ weeklyNumbers = cursor.fetchone()
 listX = [int(x) for x in weeklyNumbers[0].split(',')]  # Convert string to list of integers
 listY = [int(y) for y in weeklyNumbers[1].split(',')]  # Convert string to list of integers
 
-# Close the database connection
-conn.close()
+
 
 # Initialize a 10x10 grid with empty values
 displayGrid = [['' for _ in range(10)] for _ in range(10)]
@@ -45,10 +47,10 @@ for row in userSelectedRows:
     id, xloc, yloc = row
     displayGrid[yloc][xloc] = id
 
+
 # Print the grid with weekly numbers as headers
 print_grid(displayGrid, listX, listY)
 
-#Now need to show who the winner is for this week
-print(giantsResults[0])
 
-#
+# Close the database connection
+conn.close()

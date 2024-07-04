@@ -10,14 +10,20 @@ import sqlite3
 conn = sqlite3.connect('database.db')
 cursor = conn.cursor()
 
-cursor.execute('DROP TABLE IF EXISTS winners2023')
+cursor.execute('DROP TABLE IF EXISTS winner2023')
 
 # Create a table
 cursor.execute('''
-    CREATE TABLE IF NOT EXISTS winner2023 (
-        weekNum INTEGER PRIMARY KEY,
-        user INTEGER,
-        winType TEXT,
-        Amount INTEGER
+    CREATE TABLE winner2023 (
+    weekNum INTEGER,
+    user TEXT,
+    winType TEXT,
+    Amount INTEGER,
+    PRIMARY KEY (weekNum, user)
     )
 ''')
+
+
+
+
+
