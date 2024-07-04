@@ -49,4 +49,6 @@ for row in userSelectedRows:
 print_grid(displayGrid, listX, listY)
 
 #Now need to show who the winner is for this week
-print(giantsResults)
+print(giantsResults[0])
+
+#
