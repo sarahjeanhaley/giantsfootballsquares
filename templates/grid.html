@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Grid</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        td {
+            height: 40px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Weekly Grid for Week {{ week_x[0] }}</h1>
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                {% for num in week_x %}
+                    <th>{{ num }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in grid %}
+                <tr>
+                    <th>{{ week_y[loop.index0] }}</th>
+                    {% for cell in row %}
+                        <td>{{ cell }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <h2>Giants Results</h2>
+    {% if giants_results %}
+        <p>Week: {{ giants_results[0] }}</p>
+        <p>Giants Score: {{ giants_results[1] }}</p>
+        <p>Opponent Score: {{ giants_results[2] }}</p>
+    {% else %}
+        <p>No results available for this week.</p>
+    {% endif %}
+</body>
+</html>
