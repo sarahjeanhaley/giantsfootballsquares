@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Participant</title>
+</head>
+<body>
+    <h2>Add Participant</h2>
+    <form action="/add_part" method="post">
+        <label for="First_Name">First Name:</label>
+        <input type="text" id="First_Name" name="First_Name" required><br><br>
+        <label for="Last_Name">Last Name:</label>
+        <input type="text" id="Last_Name" name="Last_Name" required><br><br>
+        <input type="submit" value="Add Participant">
+    </form>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <br>
+    <h2>Current Participants</h2>
+    <ul>
+        {% for user in participants %}
+            <li>{{ user[0] }}</li>
+        {% endfor %}
+    </ul>
+
+</body>
+</html>

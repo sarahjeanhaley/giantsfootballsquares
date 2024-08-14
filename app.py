@@ -11,10 +11,13 @@ def get_db():
     conn = sqlite3.connect(DATABASE)
     return conn
 
+## Home page
 @app.route('/')
 def home():
     return "Welcome to the home page!"
 
+## Register users 
+## Only to be shown to Admin
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -38,6 +41,37 @@ def register():
     
     return render_template('register.html')
 
+## Add Participants to Table ##
+## Registered User Only
+@app.route('/add_part', methods=['GET', 'POST'])
+def add_part():
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        first_name = request.form['First_Name']
+        last_name = request.form['Last_Name']
+        
+        
+        try:
+            cursor.execute("INSERT INTO participants (first_name, last_name) VALUES (?, ?)", (first_name, last_name))
+            conn.commit()
+            flash('Added participant!', 'success')
+            return redirect(url_for('add_part'))
+        except sqlite3.IntegrityError:
+            flash('Username already exists. Please choose a different one.', 'error')
+        
+    # Query the list of users
+    cursor.execute("SELECT first_name FROM participants")
+    participants = cursor.fetchall()  # Fetch all rows as a list of tuples
+
+    conn.close()
+    
+    return render_template('add_part.html', participants=participants)
+
+
+## Login as Registered User ##
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -61,6 +95,7 @@ def login():
 
 
 
+##Function used to display weekly data grid
 def fetch_weekly_data(week_num):
     conn = get_db()
     cursor = conn.cursor()
@@ -91,6 +126,7 @@ def fetch_weekly_data(week_num):
 
     return list_x, list_y, display_grid, giants_results
 
+## Display Weekly Data ##
 @app.route('/week/<int:week_num>')
 def show_week(week_num):
     list_x, list_y, display_grid, giants_results = fetch_weekly_data(week_num)
