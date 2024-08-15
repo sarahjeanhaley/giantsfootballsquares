@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Season{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h2 class="card-title">Add Season</h2>
+        <form action="/add_season" method="post">
+            <div class="mb-3">
+                <label for="seasonyear" class="form-label">Season Year:</label>
+                <input type="text" id="seasonyear" name="seasonyear" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="seasondesc" class="form-label">Season Description:</label>
+                <input type="text" id="seasondesc" name="seasondesc" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Season</button>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mt-3">
+                    <ul class="list-group">
+                        {% for category, message in messages %}
+                            <li class="list-group-item list-group-item-{{ 'success' if category == 'success' else 'danger' }}">{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+
+<br>
+
+<div class="card">
+    <div class="card-body">
+        <h2 class="card-title">Current Seasons</h2>
+        <ul class="list-group">
+            {% for season in seasons %}
+                <li class="list-group-item">{{ season[0] }} - {{ season[1] }} {{ season[2] }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
+from functools import wraps
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -11,6 +12,17 @@ def get_db():
     conn = sqlite3.connect(DATABASE)
     return conn
 
+## Require login function
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('You need to be logged in to view this page.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 ## Home page
 @app.route('/')
 def home():
@@ -19,6 +31,7 @@ def home():
 ## Register users 
 ## Only to be shown to Admin
 @app.route('/register', methods=['GET', 'POST'])
+@login_required
 def register():
     if request.method == 'POST':
         username = request.form['username']
@@ -44,6 +57,7 @@ def register():
 ## Add Participants to Table ##
 ## Registered User Only
 @app.route('/add_part', methods=['GET', 'POST'])
+@login_required
 def add_part():
 
     conn = get_db()
@@ -69,6 +83,37 @@ def add_part():
     conn.close()
     
     return render_template('add_part.html', participants=participants)
+
+
+## Add Seasons ##
+## Registered User Only
+@app.route('/add_season', methods=['GET', 'POST'])
+@login_required
+def add_season():
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        seasonyear = request.form['seasonyear']
+        seasondesc = request.form['seasondesc']
+        
+        
+        try:
+            cursor.execute("INSERT INTO seasons (season_year, season_desc) VALUES (?, ?)", (seasonyear, seasondesc))
+            conn.commit()
+            flash('Added season!', 'success')
+            return redirect(url_for('add_season'))
+        except sqlite3.IntegrityError:
+            flash('Season already exists. Please choose a different one.', 'error')
+        
+    # Query the list of users
+    cursor.execute("SELECT season_id, season_year, season_desc FROM seasons")
+    seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
+
+    conn.close()
+    
+    return render_template('add_season.html', seasons=seasons)
 
 
 ## Login as Registered User ##
@@ -134,10 +179,50 @@ def show_week(week_num):
     list_x, list_y, display_grid, giants_results = fetch_weekly_data(week_num)
     return render_template('grid.html', week_x=list_x, week_y=list_y, grid=display_grid, giants_results=giants_results)
 
+# Initialize an empty 10x10 grid
+grid_size = 10
+grid = [['' for _ in range(grid_size)] for _ in range(grid_size)]
+assigned_spots = {}
+
 ##Set up grid, add participants to the football squares
-@app.route('/setupgrid')
-def setupgrid():
-    return render_template('set_up_grid.html')
+@app.route('/assign', methods=['GET', 'POST'])
+@login_required
+def assign():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Fetch the list of users from the database
+    cursor.execute("SELECT part_id, first_name, last_name FROM participants")
+    participants = cursor.fetchall()
+
+    # Fetch the list of seasons
+    cursor.execute("SELECT season_id, season_year, season_desc FROM seasons")
+    seasons = cursor.fetchall()
+
+    global assigned_spots
+    if request.method == 'POST':
+        name = request.form['name']
+        selected_squares = request.form.getlist('squares')
+
+        # Validate that exactly 5 squares are selected
+        if len(selected_squares) != 5:
+            flash('You must select exactly 5 squares.', 'error')
+        else:
+            row_counts = [int(square) // grid_size for square in selected_squares]
+            middle_rows = [2, 3, 6, 7]
+
+            # Validate that two squares are in the third, fourth, seventh, or eighth row
+            middle_row_count = sum(1 for row in row_counts if row in middle_rows)
+            if middle_row_count < 2:
+                flash('At least two squares must be in rows 3, 4, 7, or 8.', 'error')
+            else:
+                # Assign the squares to the user
+                for square in selected_squares:
+                    assigned_spots[int(square)] = name
+                flash('Squares assigned successfully!', 'success')
+                return redirect(url_for('assign'))
+
+    return render_template('assign.html', grid=grid, assigned_spots=assigned_spots, participants=participants, seasons=seasons)
 
 ##Logging out of applications
 @app.route('/logout')

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Assign Squares{% endblock %}
+
+{% block content %}
+
+    <h2>Assign Squares</h2>
+
+<form action="/assign" method="post">
+
+    <div class="mb-3">
+        <label for="user_id" class="form-label">Select Season:</label>
+        <select id="user_id" name="user_id" class="form-control" required>
+            <option value="" disabled selected>Select a season</option>
+            {% for season in seasons %}
+                <option value="{{ season[0] }}">{{ season[1] }} {{ season[2] }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+
+            <div class="mb-3">
+                <label for="user_id" class="form-label">Select User:</label>
+                <select id="user_id" name="user_id" class="form-control" required>
+                    <option value="" disabled selected>Select a participant</option>
+                    {% for participant in participants %}
+                        <option value="{{ participant[0] }}">{{ participant[1] }} {{ participant[2] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="grid">
+                {% for i in range(grid|length * grid[0]|length) %}
+                    <div class="square">
+                        <input type="checkbox" id="square-{{ i }}" name="squares" value="{{ i }}" {% if i in assigned_spots %}disabled{% endif %}>
+                        <label for="square-{{ i }}">{{ i + 1 }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Assign Squares</button>
+        </form>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="alert alert-{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+
+
+{% endblock %}
