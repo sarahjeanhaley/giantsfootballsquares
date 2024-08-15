@@ -184,10 +184,11 @@ grid_size = 10
 grid = [['' for _ in range(grid_size)] for _ in range(grid_size)]
 assigned_spots = {}
 
+
 ##Set up grid, add participants to the football squares
-@app.route('/assign', methods=['GET', 'POST'])
+@app.route('/assign/<int:season_id>', methods=['GET', 'POST'])
 @login_required
-def assign():
+def assign(season_id):
     conn = get_db()
     cursor = conn.cursor()
 
@@ -196,8 +197,8 @@ def assign():
     participants = cursor.fetchall()
 
     # Fetch the list of seasons
-    cursor.execute("SELECT season_id, season_year, season_desc FROM seasons")
-    seasons = cursor.fetchall()
+    cursor.execute("SELECT season_id, season_year, season_desc FROM seasons where season_id = ?", (season_id,))
+    seasons = cursor.fetchone()
 
     global assigned_spots
     if request.method == 'POST':
@@ -221,7 +222,7 @@ def assign():
                     assigned_spots[int(square)] = name
                 flash('Squares assigned successfully!', 'success')
                 return redirect(url_for('assign'))
-
+        return redirect(url_for('assign', season_id=season_id))
     return render_template('assign.html', grid=grid, assigned_spots=assigned_spots, participants=participants, seasons=seasons)
 
 ##Logging out of applications

@@ -38,8 +38,11 @@
         <h2 class="card-title">Current Seasons</h2>
         <ul class="list-group">
             {% for season in seasons %}
-                <li class="list-group-item">{{ season[0] }} - {{ season[1] }} {{ season[2] }}</li>
-            {% endfor %}
+            <li class="list-group-item">
+                {{ season[1] }} - {{ season[2] }}
+                <a href="{{ url_for('assign', season_id=season[0]) }}">Assign Participants to Grid</a>
+            </li>
+        {% endfor %}
         </ul>
     </div>
 </div>

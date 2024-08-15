@@ -34,9 +34,8 @@
 
             {% if 'user_id' in session %}
             <a class="nav-link text-white" href="{{ url_for('register') }}">Register User</a>
-            <a class="nav-link text-white" href="{{ url_for('add_season') }}">Add Season</a>
+            <a class="nav-link text-white" href="{{ url_for('add_season') }}">Manage Seasons</a>
             <a class="nav-link text-white" href="{{ url_for('add_part') }}">Add Participant</a>
-            <a class="nav-link text-white" href="{{ url_for('assign') }}">Assign to Grid</a>
             <a class="nav-link text-white" href="{{ url_for('logout') }}">Logout</a>
             {% else %}
             <a class="nav-link text-white" href="{{ url_for('login') }}">Login</a>

@@ -4,20 +4,9 @@
 
 {% block content %}
 
-    <h2>Assign Squares</h2>
+<h2>Assign Participants to Grid for {{ seasons[1] }} {{ seasons[2] }}</h2>
 
 <form action="/assign" method="post">
-
-    <div class="mb-3">
-        <label for="user_id" class="form-label">Select Season:</label>
-        <select id="user_id" name="user_id" class="form-control" required>
-            <option value="" disabled selected>Select a season</option>
-            {% for season in seasons %}
-                <option value="{{ season[0] }}">{{ season[1] }} {{ season[2] }}</option>
-            {% endfor %}
-        </select>
-    </div>
-
 
             <div class="mb-3">
                 <label for="user_id" class="form-label">Select User:</label>
