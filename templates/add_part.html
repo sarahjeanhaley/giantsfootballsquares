@@ -1,35 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Participant</title>
-</head>
-<body>
-    <h2>Add Participant</h2>
-    <form action="/add_part" method="post">
-        <label for="First_Name">First Name:</label>
-        <input type="text" id="First_Name" name="First_Name" required><br><br>
-        <label for="Last_Name">Last Name:</label>
-        <input type="text" id="Last_Name" name="Last_Name" required><br><br>
-        <input type="submit" value="Add Participant">
-    </form>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul>
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
-    <br>
-    <h2>Current Participants</h2>
-    <ul>
-        {% for user in participants %}
-            <li>{{ user[0] }}</li>
-        {% endfor %}
-    </ul>
+{% extends 'base.html' %}
 
-</body>
-</html>
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h2 class="card-title">Add Participant</h2>
+        <form action="/add_part" method="post">
+            <div class="mb-3">
+                <label for="First_Name" class="form-label">First Name:</label>
+                <input type="text" id="First_Name" name="First_Name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="Last_Name" class="form-label">Last Name:</label>
+                <input type="text" id="Last_Name" name="Last_Name" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Participant</button>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mt-3">
+                    <ul class="list-group">
+                        {% for category, message in messages %}
+                            <li class="list-group-item list-group-item-{{ 'success' if category == 'success' else 'danger' }}">{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+
+<br>
+
+<div class="card">
+    <div class="card-body">
+        <h2 class="card-title">Current Participants</h2>
+        <ul class="list-group">
+            {% for user in participants %}
+                <li class="list-group-item">{{ user[0] }} - {{ user[1] }} {{ user[2] }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

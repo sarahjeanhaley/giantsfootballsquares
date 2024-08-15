@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -14,7 +14,7 @@ def get_db():
 ## Home page
 @app.route('/')
 def home():
-    return "Welcome to the home page!"
+    return render_template('index.html')
 
 ## Register users 
 ## Only to be shown to Admin
@@ -60,10 +60,10 @@ def add_part():
             flash('Added participant!', 'success')
             return redirect(url_for('add_part'))
         except sqlite3.IntegrityError:
-            flash('Username already exists. Please choose a different one.', 'error')
+            flash('Participant already exists. Please choose a different one.', 'error')
         
     # Query the list of users
-    cursor.execute("SELECT first_name FROM participants")
+    cursor.execute("SELECT part_id, first_name, last_name FROM participants")
     participants = cursor.fetchall()  # Fetch all rows as a list of tuples
 
     conn.close()
@@ -80,10 +80,11 @@ def login():
         
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT password FROM app_user WHERE username = ?", (username,))
-        stored_password = cursor.fetchone()
+        cursor.execute("SELECT username, password FROM app_user WHERE username = ?", (username,))
+        user = cursor.fetchone()
         
-        if stored_password and check_password_hash(stored_password[0], password):
+        if user and check_password_hash(user[1], password):
+            session['user_id'] = user[0]  # Set the session
             flash('Login successful!', 'success')
             return redirect(url_for('home'))
         else:
@@ -92,6 +93,7 @@ def login():
         conn.close()
     
     return render_template('login.html')
+
 
 
 
@@ -132,6 +134,18 @@ def show_week(week_num):
     list_x, list_y, display_grid, giants_results = fetch_weekly_data(week_num)
     return render_template('grid.html', week_x=list_x, week_y=list_y, grid=display_grid, giants_results=giants_results)
 
+##Set up grid, add participants to the football squares
+@app.route('/setupgrid')
+def setupgrid():
+    return render_template('set_up_grid.html')
+
+##Logging out of applications
+@app.route('/logout')
+def logout():
+    # Clear the session data, logging the user out
+    session.clear()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('home'))
 
 
 if __name__ == '__main__':
