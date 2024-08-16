@@ -56,8 +56,16 @@ def register():
             flash('Username already exists. Please choose a different one.', 'error')
         
         conn.close()
-    
-    return render_template('register.html')
+        
+    conn = get_db()
+    cursor = conn.cursor()   
+
+    # Fetch all current users
+    cursor.execute("SELECT username FROM app_user")
+    users = cursor.fetchall()
+    conn.close()
+
+    return render_template('register.html', users=users)
 
 
 ##############################################################################
