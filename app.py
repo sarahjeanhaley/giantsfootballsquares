@@ -370,6 +370,53 @@ def setup_week(season_id):
     return render_template('setup_week.html', season_id=season_id, season_desc=season_desc, weeks_info=weeks_info)
 
 ##############################################################################
+#######     View Week
+##############################################################################
+@app.route('/view_week/<int:season_id>/<int:week_id>')
+def view_week(season_id, week_id):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Fetch X axis and Y axis numbers as individual integers
+    cursor.execute('''SELECT y_axis FROM weeks WHERE season_id = ? AND week_id = ?''', (season_id, week_id))
+    y_axis = cursor.fetchone()
+
+    cursor.execute('''SELECT x_axis FROM weeks WHERE season_id = ? AND week_id = ?''', (season_id, week_id))
+    x_axis = cursor.fetchone()
+    
+    if x_axis is None:
+        flash("No week data found for the selected season and week.", "error")
+        return redirect(url_for('some_other_route'))  # Redirect to an appropriate route
+    if y_axis is None:
+        flash("No week data found for the selected season and week.", "error")
+        return redirect(url_for('some_other_route'))  # Redirect to an appropriate route
+
+    y_axis_export_tuple = y_axis[0]
+    y_axis_string=str(y_axis_export_tuple)
+    y_axis = [int(char) for char in y_axis_string]
+
+    x_axis_export_tuple = x_axis[0]
+    x_axis_string=str(x_axis_export_tuple)
+    x_axis = [int(char) for char in x_axis_string]
+
+    # Fetch the participants' grid positions
+    cursor.execute('''SELECT name, listx, listy
+                      FROM participants 
+                      LEFT JOIN grid_spots ON part_id = user_part_id
+                      LEFT JOIN board_conversion ON board_index = grid_index
+                      WHERE seasonid = ?''', (season_id,))
+    grid_data = cursor.fetchall()
+
+    # Close the connection
+    conn.close()
+
+    # Organize data into a dictionary for easy lookup
+    grid_dict = {(listx, listy): name for name, listx, listy in grid_data}
+
+    return render_template('view_week.html', x_axis=x_axis, y_axis=y_axis, grid_dict=grid_dict, week_id=week_id, season_id=season_id)
+
+
+##############################################################################
 #######     Log Out
 ##############################################################################
 @app.route('/logout')
