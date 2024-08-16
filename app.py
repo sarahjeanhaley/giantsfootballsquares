@@ -2,16 +2,22 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from functools import wraps
 import sqlite3
 import random
+import sqlitecloud
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with your actual secret key
 
-DATABASE = 'database.db'
 
+##############################################################################
+#######     **Not a Page**    Database connection - moving to sqlite in cloud for production
+##############################################################################
+DATABASE = 'database.db'
 def get_db():
     conn = sqlite3.connect(DATABASE)
+    #conn = sqlitecloud.connect("sqlitecloud://con7fzjcsk.sqlite.cloud:8860/database.db?apikey=nMQ31rYJ8SnQifqjx8bKRfazMf9d5GCeGUQ7VsaZCYM")
     return conn
+
 
 ##############################################################################
 #######     **Not a Page**    Require login function
