@@ -46,7 +46,7 @@
                     <span> {{ season[1] }} - {{ season[2] }}</span>
                     <div>
                         <a href="{{ url_for('assign', season_id=season[0]) }}" class="btn btn-sm btn-primary me-2">Manage Participants</a>
-
+                        <a href="{{ url_for('setup_week', season_id=season[0]) }}" class="btn btn-sm btn-primary me-2">Manage Weeks</a>
                     </div>
                 </div>
             </div>

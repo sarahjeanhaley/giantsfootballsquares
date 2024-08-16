@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from functools import wraps
 import sqlite3
+import random
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -56,7 +57,7 @@ def register():
             flash('Username already exists. Please choose a different one.', 'error')
         
         conn.close()
-        
+
     conn = get_db()
     cursor = conn.cursor()   
 
@@ -207,7 +208,6 @@ def login():
 
 
 
-
 ##############################################################################
 #######     ** not a page ** Function to display weekly grid data
 ##############################################################################
@@ -318,6 +318,56 @@ def assign(season_id):
     
     return render_template('assign.html', grid_size=grid_size, assigned_spots=assigned_spots, participants=participants, seasons=seasons)
 
+
+##############################################################################
+#######     Set up weekly grid 
+##############################################################################
+
+@app.route('/setup_week/<int:season_id>', methods=['GET', 'POST'])
+@login_required
+def setup_week(season_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    if request.method == 'POST':
+        week_number = request.form['week_number']
+        game_date = request.form['game_date']
+        
+        options = ['0','1','2','3','4','5','6','7','8','9']
+        random.shuffle(options)
+        x_string = ''.join(options)  
+        random.shuffle(options)
+        y_string = ''.join(options) 
+
+        try:
+            # Insert the week details and random numbers into the table
+            cursor.execute(
+            "INSERT INTO weeks (season_id, season_week_number, game_date, x_axis, y_axis) VALUES (?, ?, ?, ?, ?)",
+            (season_id, week_number, game_date, x_string, y_string)
+                    )
+            conn.commit()
+            flash('Week setup successfully!', 'success')
+            return redirect(url_for('setup_week', season_id=season_id))
+        except Exception as e:
+            flash(f'Error setting up week: {str(e)}', 'error')
+    
+    # Fetch the season name based on the season_id
+    cursor.execute("SELECT season_desc FROM seasons WHERE season_id = ?", (season_id,))
+    season = cursor.fetchone()
+    
+    if season:
+        season_desc = season[0]
+    else:
+        flash('Season not found.', 'error')
+        return redirect(url_for('some_other_route'))
+
+    # Fetch the list of weeks for the selected season
+    cursor.execute("SELECT week_id, season_week_number, game_date name FROM weeks where season_id = ?", (season_id,))
+    weeks_info = cursor.fetchall()
+
+    conn.close()
+    
+    return render_template('setup_week.html', season_id=season_id, season_desc=season_desc, weeks_info=weeks_info)
 
 ##############################################################################
 #######     Log Out
