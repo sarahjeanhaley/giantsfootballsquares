@@ -12,7 +12,9 @@ def get_db():
     conn = sqlite3.connect(DATABASE)
     return conn
 
-## Require login function
+##############################################################################
+#######     **Not a Page**    Require login function
+##############################################################################
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -23,13 +25,16 @@ def login_required(f):
     return decorated_function
 
 
-## Home page
+##############################################################################
+#######     Home Page
+##############################################################################
 @app.route('/')
 def home():
     return render_template('index.html')
 
-## Register users 
-## Only to be shown to Admin
+##############################################################################
+#######     Register new users for using backend of application
+##############################################################################
 @app.route('/register', methods=['GET', 'POST'])
 @login_required
 def register():
@@ -53,9 +58,9 @@ def register():
         conn.close()
     
     return render_template('register.html')
-
-## Add Participants to Table ##
-## Registered User Only
+##############################################################################
+#######     Add new participants to the application
+##############################################################################
 @app.route('/add_part', methods=['GET', 'POST'])
 @login_required
 def add_part():
@@ -85,8 +90,9 @@ def add_part():
     return render_template('add_part.html', participants=participants)
 
 
-## Add Seasons ##
-## Registered User Only
+##############################################################################
+#######     Manage seasons (Add, assign users to squares)
+##############################################################################
 @app.route('/add_season', methods=['GET', 'POST'])
 @login_required
 def add_season():
@@ -116,7 +122,9 @@ def add_season():
     return render_template('add_season.html', seasons=seasons)
 
 
-## Login as Registered User ##
+##############################################################################
+#######     Login
+##############################################################################
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -142,7 +150,9 @@ def login():
 
 
 
-##Function used to display weekly data grid
+##############################################################################
+#######     ** not a page ** Function to display weekly grid data
+##############################################################################
 def fetch_weekly_data(week_num):
     conn = get_db()
     cursor = conn.cursor()
@@ -173,59 +183,90 @@ def fetch_weekly_data(week_num):
 
     return list_x, list_y, display_grid, giants_results
 
-## Display Weekly Data ##
+
+##############################################################################
+#######     Display weekly grid
+##############################################################################
 @app.route('/week/<int:week_num>')
 def show_week(week_num):
     list_x, list_y, display_grid, giants_results = fetch_weekly_data(week_num)
     return render_template('grid.html', week_x=list_x, week_y=list_y, grid=display_grid, giants_results=giants_results)
+
+
+##############################################################################
+#######     Assign participants to the grid, by the season
+##############################################################################
 
 # Initialize an empty 10x10 grid
 grid_size = 10
 grid = [['' for _ in range(grid_size)] for _ in range(grid_size)]
 assigned_spots = {}
 
-
-##Set up grid, add participants to the football squares
 @app.route('/assign/<int:season_id>', methods=['GET', 'POST'])
 @login_required
 def assign(season_id):
     conn = get_db()
     cursor = conn.cursor()
 
+    grid_size = 10  # Assuming a 10x10 grid
+
     # Fetch the list of users from the database
     cursor.execute("SELECT part_id, first_name, last_name FROM participants")
     participants = cursor.fetchall()
 
-    # Fetch the list of seasons
-    cursor.execute("SELECT season_id, season_year, season_desc FROM seasons where season_id = ?", (season_id,))
+    # Fetch the specific season details
+    cursor.execute('SELECT season_id, season_year, season_desc FROM seasons WHERE season_id = ?', (season_id,))
     seasons = cursor.fetchone()
 
-    global assigned_spots
+    # Fetch already assigned spots for this season, including user information
+    cursor.execute('''
+        SELECT grid_index, user_part_id, first_name, last_name
+        FROM grid_spots
+        JOIN participants ON grid_spots.user_part_id = participants.part_id
+        WHERE seasonID = ?
+    ''', (season_id,))
+    
+    # Create a dictionary of assigned spots with grid_index as key and participant's name as value
+    assigned_spots = {row[0] - 1: f"{row[2]} {row[3]}" for row in cursor.fetchall()}  # Adjust to 0-based index
+
+
     if request.method == 'POST':
-        name = request.form['name']
-        selected_squares = request.form.getlist('squares')
+        user_part_id = request.form['user_part_id']
+        selected_squares = request.form.getlist('squares[]')
 
         # Validate that exactly 5 squares are selected
         if len(selected_squares) != 5:
             flash('You must select exactly 5 squares.', 'error')
         else:
             row_counts = [int(square) // grid_size for square in selected_squares]
-            middle_rows = [2, 3, 6, 7]
-
-            # Validate that two squares are in the third, fourth, seventh, or eighth row
+            middle_rows = [2, 3, 6, 7]  # 0-based index for rows 3, 4, 7, and 8
+        
+            # Count the number of squares in the middle rows
             middle_row_count = sum(1 for row in row_counts if row in middle_rows)
+        
+            # Validate that at least two squares are in the middle rows (3, 4, 7, 8)
             if middle_row_count < 2:
                 flash('At least two squares must be in rows 3, 4, 7, or 8.', 'error')
             else:
-                # Assign the squares to the user
-                for square in selected_squares:
-                    assigned_spots[int(square)] = name
-                flash('Squares assigned successfully!', 'success')
-                return redirect(url_for('assign'))
-        return redirect(url_for('assign', season_id=season_id))
-    return render_template('assign.html', grid=grid, assigned_spots=assigned_spots, participants=participants, seasons=seasons)
+                # Save the selected squares to the database
+                try:
+                    for square in selected_squares:
+                        cursor.execute(
+                            "INSERT INTO grid_spots (seasonID, user_part_id, grid_index) VALUES (?, ?, ?)",
+                            (season_id, user_part_id, int(square))
+                        )
+                    conn.commit()
+                    flash('Squares assigned successfully!', 'success')
+                    return redirect(url_for('assign', season_id=season_id))
+                except Exception as e:
+                    flash(f'Error assigning squares: {str(e)}', 'error')
+    
+    return render_template('assign.html', grid_size=grid_size, assigned_spots=assigned_spots, participants=participants, seasons=seasons)
 
-##Logging out of applications
+
+##############################################################################
+#######     Log Out
+##############################################################################
 @app.route('/logout')
 def logout():
     # Clear the session data, logging the user out

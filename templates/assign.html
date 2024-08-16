@@ -6,38 +6,49 @@
 
 <h2>Assign Participants to Grid for {{ seasons[1] }} {{ seasons[2] }}</h2>
 
-<form action="/assign" method="post">
+<form action="{{ url_for('assign', season_id=seasons[0]) }}" method="post">
 
-            <div class="mb-3">
-                <label for="user_id" class="form-label">Select User:</label>
-                <select id="user_id" name="user_id" class="form-control" required>
-                    <option value="" disabled selected>Select a participant</option>
-                    {% for participant in participants %}
-                        <option value="{{ participant[0] }}">{{ participant[1] }} {{ participant[2] }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="grid">
-                {% for i in range(grid|length * grid[0]|length) %}
-                    <div class="square">
-                        <input type="checkbox" id="square-{{ i }}" name="squares" value="{{ i }}" {% if i in assigned_spots %}disabled{% endif %}>
-                        <label for="square-{{ i }}">{{ i + 1 }}</label>
-                    </div>
+    <div class="mb-3">
+        Must select 5 total boxes. Two of the boxes must be in the yellow section.<br>
+        <label for="user_part_id" class="form-label">Select User:</label>
+        <select id="user_part_id" name="user_part_id" class="form-control" required>
+            <option value="" disabled selected>Select a participant</option>
+            {% for participant in participants %}
+                <option value="{{ participant[0] }}">{{ participant[1] }} {{ participant[2] }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <!-- Display the grid as a 10x10 table -->
+    <table class="table table-bordered">
+        {% for row in range(grid_size) %}
+        <tr>
+                {% for col in range(grid_size) %}
+                    {% set index = row * grid_size + col %}
+                    <td {% if row == 2 or row == 3 or row == 6 or row == 7 %} style="background-color: yellow;" {% endif %}>
+                        <div class="square">
+                            {% if index in assigned_spots %}
+                                <span>{{ assigned_spots[index] }}</span>
+                            {% else %}
+                                <input type="checkbox" id="square-{{ index }}" name="squares[]" value="{{ index + 1 }}">
+                                <label for="square-{{ index }}">{{ index + 1 }}</label>
+                            {% endif %}
+                        </div>
+                    </td>
                 {% endfor %}
-            </div>
-            <button type="submit" class="btn btn-primary mt-3">Assign Squares</button>
-        </form>
+            </tr>
+        {% endfor %}
+    </table>
+    
+    <button type="submit" class="btn btn-primary mt-3">Assign Squares</button>
+</form>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul>
-                {% for category, message in messages %}
-                    <li class="alert alert-{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
-
-
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+            {% for category, message in messages %}
+                {{ message }}
+            {% endfor %}
+    {% endif %}
+{% endwith %}
 
 {% endblock %}
