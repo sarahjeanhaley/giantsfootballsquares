@@ -58,36 +58,86 @@ def register():
         conn.close()
     
     return render_template('register.html')
+
+
 ##############################################################################
 #######     Add new participants to the application
 ##############################################################################
 @app.route('/add_part', methods=['GET', 'POST'])
 @login_required
 def add_part():
-
     conn = get_db()
     cursor = conn.cursor()
 
     if request.method == 'POST':
-        first_name = request.form['First_Name']
-        last_name = request.form['Last_Name']
-        
+        name = request.form['name']
         
         try:
-            cursor.execute("INSERT INTO participants (first_name, last_name) VALUES (?, ?)", (first_name, last_name))
+            cursor.execute("INSERT INTO participants (name) VALUES (?)", (name,))
             conn.commit()
             flash('Added participant!', 'success')
-            return redirect(url_for('add_part'))
         except sqlite3.IntegrityError:
             flash('Participant already exists. Please choose a different one.', 'error')
-        
-    # Query the list of users
-    cursor.execute("SELECT part_id, first_name, last_name FROM participants")
-    participants = cursor.fetchall()  # Fetch all rows as a list of tuples
+
+        return redirect(url_for('add_part'))
+    
+    # Query the list of participants
+    cursor.execute("SELECT part_id, name FROM participants")
+    participants = cursor.fetchall()
+
+    participant_count = len(participants)
 
     conn.close()
+
+    return render_template('add_part.html', participants=participants, participant_count=participant_count)
+
+##############################################################################
+#######     Edit participant - Sub of Add Part
+##############################################################################
+@app.route('/edit_part/<int:part_id>', methods=['GET', 'POST'])
+@login_required
+def edit_part(part_id):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        new_name = request.form['name']
+        
+        try:
+            cursor.execute("UPDATE participants SET name = ? WHERE part_id = ?", (new_name, part_id))
+            conn.commit()
+            flash('Participant updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating participant: {str(e)}', 'error')
+        return redirect(url_for('add_part'))
+
+    # Fetch the current participant details
+    cursor.execute("SELECT name FROM participants WHERE part_id = ?", (part_id,))
+    participant = cursor.fetchone()
+
+    conn.close()
+
+    return render_template('edit_part.html', participant=participant, part_id=part_id)
+
+##############################################################################
+#######     delete participant - Sub of Add Part
+##############################################################################
+@app.route('/delete_part/<int:part_id>', methods=['POST'])
+@login_required
+def delete_part(part_id):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("DELETE FROM participants WHERE part_id = ?", (part_id,))
+        conn.commit()
+        flash('Participant deleted successfully!', 'success')
+    except Exception as e:
+        flash(f'Error deleting participant: {str(e)}', 'error')
     
-    return render_template('add_part.html', participants=participants)
+    conn.close()
+
+    return redirect(url_for('add_part'))
 
 
 ##############################################################################
@@ -211,23 +261,20 @@ def assign(season_id):
     grid_size = 10  # Assuming a 10x10 grid
 
     # Fetch the list of users from the database
-    cursor.execute("SELECT part_id, first_name, last_name FROM participants")
+    cursor.execute("SELECT part_id, name FROM participants")
     participants = cursor.fetchall()
 
     # Fetch the specific season details
     cursor.execute('SELECT season_id, season_year, season_desc FROM seasons WHERE season_id = ?', (season_id,))
     seasons = cursor.fetchone()
 
-    # Fetch already assigned spots for this season, including user information
-    cursor.execute('''
-        SELECT grid_index, user_part_id, first_name, last_name
-        FROM grid_spots
-        JOIN participants ON grid_spots.user_part_id = participants.part_id
-        WHERE seasonID = ?
-    ''', (season_id,))
-    
-    # Create a dictionary of assigned spots with grid_index as key and participant's name as value
-    assigned_spots = {row[0] - 1: f"{row[2]} {row[3]}" for row in cursor.fetchall()}  # Adjust to 0-based index
+    # Fetch already assigned spots for this season, including the participant name
+    cursor.execute('''SELECT grid_index, participants.name 
+                  FROM grid_spots 
+                  JOIN participants ON grid_spots.user_part_id = participants.part_id 
+                  WHERE seasonID = ?''', (season_id,))
+    assigned_spots = {row[0]: row[1] for row in cursor.fetchall()}  # Convert to dictionary
+
 
 
     if request.method == 'POST':

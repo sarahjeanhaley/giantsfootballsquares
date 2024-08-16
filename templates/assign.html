@@ -14,7 +14,7 @@
         <select id="user_part_id" name="user_part_id" class="form-control" required>
             <option value="" disabled selected>Select a participant</option>
             {% for participant in participants %}
-                <option value="{{ participant[0] }}">{{ participant[1] }} {{ participant[2] }}</option>
+                <option value="{{ participant[0] }}">{{ participant[1] }}</option>
             {% endfor %}
         </select>
     </div>
@@ -27,8 +27,8 @@
                     {% set index = row * grid_size + col %}
                     <td {% if row == 2 or row == 3 or row == 6 or row == 7 %} style="background-color: yellow;" {% endif %}>
                         <div class="square">
-                            {% if index in assigned_spots %}
-                                <span>{{ assigned_spots[index] }}</span>
+                            {% if index + 1 in assigned_spots %}
+                                <span>{{ assigned_spots[index + 1] }}</span>
                             {% else %}
                                 <input type="checkbox" id="square-{{ index }}" name="squares[]" value="{{ index + 1 }}">
                                 <label for="square-{{ index }}">{{ index + 1 }}</label>
