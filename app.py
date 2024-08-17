@@ -40,6 +40,32 @@ def home():
     return render_template('index.html')
 
 ##############################################################################
+#######     Login
+##############################################################################
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT username, password FROM app_user WHERE username = ?", (username,))
+        user = cursor.fetchone()
+        
+        if user and check_password_hash(user[1], password):
+            session['user_id'] = user[0]  # Set the session
+            flash('Login successful!', 'success')
+            return redirect(url_for('home'))
+        else:
+            flash('Invalid credentials. Please try again.', 'error')
+        
+        conn.close()
+    
+    return render_template('login.html')
+
+
+##############################################################################
 #######     Register new users for using backend of application
 ##############################################################################
 @app.route('/register', methods=['GET', 'POST'])
@@ -187,74 +213,6 @@ def add_season():
     return render_template('add_season.html', seasons=seasons)
 
 
-##############################################################################
-#######     Login
-##############################################################################
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("SELECT username, password FROM app_user WHERE username = ?", (username,))
-        user = cursor.fetchone()
-        
-        if user and check_password_hash(user[1], password):
-            session['user_id'] = user[0]  # Set the session
-            flash('Login successful!', 'success')
-            return redirect(url_for('home'))
-        else:
-            flash('Invalid credentials. Please try again.', 'error')
-        
-        conn.close()
-    
-    return render_template('login.html')
-
-
-
-##############################################################################
-#######     ** not a page ** Function to display weekly grid data
-##############################################################################
-def fetch_weekly_data(week_num):
-    conn = get_db()
-    cursor = conn.cursor()
-
-    # Retrieve giants scores for the specified week
-    cursor.execute('SELECT weekNum, giantsScore, opponetScore FROM giants2023 WHERE weekNum = ?', (week_num,))
-    giants_results = cursor.fetchone()
-
-    # Retrieve user data
-    cursor.execute('SELECT id, xloc, yloc FROM users')
-    user_selected_rows = cursor.fetchall()
-
-    # Retrieve weekly numbers
-    cursor.execute('SELECT listX, listY FROM board WHERE weekNum = ?', (week_num,))
-    weekly_numbers = cursor.fetchone()
-    list_x = [int(x) for x in weekly_numbers[0].split(',')]  # Convert string to list of integers
-    list_y = [int(y) for y in weekly_numbers[1].split(',')]  # Convert string to list of integers
-
-    # Initialize a 10x10 grid with empty values
-    display_grid = [['' for _ in range(10)] for _ in range(10)]
-
-    # Populate the grid with the user IDs
-    for row in user_selected_rows:
-        id, xloc, yloc = row
-        display_grid[yloc][xloc] = id
-
-    conn.close()
-
-    return list_x, list_y, display_grid, giants_results
-
-
-##############################################################################
-#######     Display weekly grid
-##############################################################################
-@app.route('/week/<int:week_num>')
-def show_week(week_num):
-    list_x, list_y, display_grid, giants_results = fetch_weekly_data(week_num)
-    return render_template('grid.html', week_x=list_x, week_y=list_y, grid=display_grid, giants_results=giants_results)
 
 
 ##############################################################################
@@ -288,7 +246,6 @@ def assign(season_id):
                   JOIN participants ON grid_spots.user_part_id = participants.part_id 
                   WHERE seasonID = ?''', (season_id,))
     assigned_spots = {row[0]: row[1] for row in cursor.fetchall()}  # Convert to dictionary
-
 
 
     if request.method == 'POST':
@@ -368,7 +325,7 @@ def setup_week(season_id):
         return redirect(url_for('some_other_route'))
 
     # Fetch the list of weeks for the selected season
-    cursor.execute("SELECT week_id, season_week_number, game_date name FROM weeks where season_id = ?", (season_id,))
+    cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent FROM weeks where season_id = ?", (season_id,))
     weeks_info = cursor.fetchall()
 
     conn.close()
@@ -405,21 +362,100 @@ def view_week(season_id, week_id):
     x_axis_string=str(x_axis_export_tuple)
     x_axis = [int(char) for char in x_axis_string]
 
-    # Fetch the participants' grid positions
-    cursor.execute('''SELECT name, listx, listy
+    # # Fetch the participants' grid positions
+    # cursor.execute('''SELECT name, listx, listy
+    #                   FROM participants 
+    #                   LEFT JOIN grid_spots ON part_id = user_part_id
+    #                   LEFT JOIN board_conversion ON board_index = grid_index
+    #                   WHERE seasonid = ?''', (season_id,))
+    # grid_data = cursor.fetchall()
+
+    #Fetch the participants' grid positions
+    cursor.execute('''SELECT name, grid_index
                       FROM participants 
                       LEFT JOIN grid_spots ON part_id = user_part_id
-                      LEFT JOIN board_conversion ON board_index = grid_index
                       WHERE seasonid = ?''', (season_id,))
     grid_data = cursor.fetchall()
-
+    grid_dict = {index: name for name, index in grid_data}
     # Close the connection
     conn.close()
 
     # Organize data into a dictionary for easy lookup
-    grid_dict = {(listx, listy): name for name, listx, listy in grid_data}
+    #grid_dict = {(listx, listy): name for name, listx, listy in grid_data}
 
     return render_template('view_week.html', x_axis=x_axis, y_axis=y_axis, grid_dict=grid_dict, week_id=week_id, season_id=season_id)
+
+
+
+##############################################################################
+#######     Enter Score (For Season - Week)
+##############################################################################
+@app.route('/enter_score/<int:season_id>/<int:week_id>', methods=['GET', 'POST'])
+@login_required
+def enter_score(season_id, week_id):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        giants = request.form['giants']
+        opponent = request.form['opponent']
+        try:
+            cursor.execute('''UPDATE weeks SET giants = ?, opponent = ? WHERE season_id = ? AND week_id = ?''', (giants, opponent, season_id, week_id))
+            conn.commit()
+            flash('Added score!', 'success')
+            return redirect(url_for('setup_week', week_id=week_id, season_id=season_id))
+        
+        except sqlite3.IntegrityError:
+            flash('Score already exists. Please choose a different one.', 'error')
+
+    conn.close()
+    
+    return render_template('enter_score.html', week_id=week_id, season_id=season_id)
+
+
+
+
+
+##############################################################################
+#######     Edit Score (For Season - Week)
+##############################################################################
+@app.route('/edit_score/<int:season_id>/<int:week_id>', methods=['GET', 'POST'])
+@login_required
+def edit_score(season_id, week_id):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        giants = request.form['giants']
+        opponent = request.form['opponent']
+        try:
+            cursor.execute('''UPDATE weeks SET giants = ?, opponent = ? WHERE season_id = ? AND week_id = ?''', (giants, opponent, season_id, week_id))
+            conn.commit()
+            flash('Edited score!', 'success')
+            return redirect(url_for('setup_week', week_id=week_id, season_id=season_id))
+        
+        except sqlite3.IntegrityError:
+            flash('Score already exists. Please choose a different one.', 'error')
+
+
+    # Fetch the current score data
+    cursor.execute("SELECT giants, opponent FROM weeks WHERE season_id = ? AND week_id = ?", (season_id, week_id,))
+    score = cursor.fetchone()
+
+    #Get week date data to display
+    cursor.execute("SELECT season_week_number, game_date FROM weeks WHERE season_id = ? and week_id = ?", (season_id, week_id))
+    week_data = cursor.fetchone()
+
+    #Get the season name to display
+    cursor.execute("SELECT season_desc FROM seasons WHERE season_id = ?", (season_id,))
+    season_data = cursor.fetchone()
+
+    conn.close()
+    
+    return render_template('edit_score.html', week_id=week_id, season_id=season_id, score=score, week_data=week_data, season_data=season_data)
 
 
 ##############################################################################

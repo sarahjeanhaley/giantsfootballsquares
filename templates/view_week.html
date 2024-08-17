@@ -2,30 +2,41 @@
 
 {% block title %}View Week{% endblock %}
 
+
 {% block content %}
+
+
 <h2>Grid for Week {{ week_id }} of Season {{ season_id }}</h2>
+
+<!-- Displaying the Grid with 1-based indexing -->
+
 
 <table class="table table-bordered table-hover text-center">
     <thead>
         <tr>
-            <th></th>  <!-- Top-left empty cell -->
-            {% for x in x_axis %}
-                <th>{{ x }}</th>  <!-- X axis numbers -->
-            {% endfor %}
+            <th></th><!-- Top-left empty cell -->
+                {% for col in range(1, 11) %}
+                    <th>{{ x_axis[col-1] }}</th><!-- X axis numbers -->
+                {% endfor %}
         </tr>
     </thead>
     <tbody>
-        {% for y in y_axis %}
+        {% for row in range(1, 11) %}
             <tr>
-                <th>{{ y }}</th>  <!-- Y axis number -->
-                {% for x in x_axis %}
-                    <td>
-                        {{ grid_dict[(x, y)] if (x, y) in grid_dict else '' }}
-                    </td>
-                {% endfor %}
+                <th>
+                    {{ y_axis[row-1] }}
+                </th>
+                <!-- Y axis number -->
+                    {% for col in range(1, 11) %} 
+                    {% set index = (row - 1) * 10 + col %} 
+                        <td>
+                            {{ grid_dict.get(index, '') }}
+                        </td>
+                    {% endfor %}
             </tr>
         {% endfor %}
     </tbody>
 </table>
+
 
 {% endblock %}
