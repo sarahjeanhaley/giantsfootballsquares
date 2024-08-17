@@ -1,2 +1,4 @@
 flask
 sqlitecloud
+gunicorn
+jinja2
