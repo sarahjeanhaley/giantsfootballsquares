@@ -11,11 +11,11 @@
         <h2 class="card-title">Enter Score</h2>
         <form action="{{ url_for('enter_score', season_id=season_id, week_id=week_id) }}" method="post">
             <div class="mb-3">
-                <label for="giants" class="form-label">Giants:</label>
+                <label for="giants" class="form-label">Giants - enter LAST DIGIT from score only:</label>
                 <input type="text" id="giants" name="giants" class="form-control" required>
             </div>
             <div class="mb-3">
-                <label for="opponent" class="form-label">Opponent:</label>
+                <label for="opponent" class="form-label">Opponent - enter LAST DIGIT from score only:</label>
                 <input type="text" id="opponent" name="opponent" class="form-control" required>
             </div>
             <button type="submit" class="btn btn-primary">Add Score</button>

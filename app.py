@@ -77,14 +77,16 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 @login_required
 def register():
- 
+
+    conn = get_db()
+    cursor = conn.cursor()
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
-        conn = get_db()
-        cursor = conn.cursor()
+
         try:
             cursor.execute("INSERT INTO app_user (username, password) VALUES (%s, %s)", (username, hashed_password))
             conn.commit()
@@ -92,10 +94,39 @@ def register():
             return redirect(url_for('home'))
         except psycopg2.IntegrityError:
             flash('Username already exists. Please choose a different one.', 'error')
-        conn.close()
 
-    return render_template('register.html')
-                                                                                                                                                                                                                                                                                                                                                                                              
+    # Query the list of users
+    cursor.execute("SELECT trim(username) FROM app_user")
+    user_list = cursor.fetchall()
+
+    conn.close()
+
+    return render_template('register.html', user_list=user_list)
+
+##############################################################################
+#######     Edit User Password
+##############################################################################
+@app.route('/edit_user/<username>', methods=['GET', 'POST'])
+@login_required
+def edit_user(username):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        password = request.form['password']
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        try:
+            cursor.execute("UPDATE app_user SET password = %s WHERE username = %s", (hashed_password, username))
+            conn.commit()
+            flash('User updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating user: {str(e)}', 'error')
+        return redirect(url_for('register'))
+
+    conn.close()
+    username= username.strip()
+    return render_template('edit_user.html', username=username)
+ 
 ##############################################################################
 #######     Add new participants to the application ** Updated to postgres
 ##############################################################################
@@ -114,7 +145,6 @@ def add_part():
             flash('Added participant!', 'success')
         except sqlite3.IntegrityError:
             flash('Participant already exists. Please choose a different one.', 'error')
-
         return redirect(url_for('add_part'))
     
     # Query the list of participants

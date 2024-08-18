@@ -8,11 +8,11 @@
         <h2 class="card-title">Edit Score for  Week {{ week_data[0] }},  {{ week_data[1] }} for {{ season_data[0] }}</h2>
         <form action="{{ url_for('edit_score', season_id=season_id, week_id=week_id) }}" method="post">
             <div class="mb-3">
-                <label for="giants" class="form-label">Giants:</label>
+                <label for="giants" class="form-label">Giants - enter LAST DIGIT from score only:</label>
                 <input type="text" id="giants" name="giants" class="form-control" value="{{ score[0] }}" required>
             </div>
             <div class="mb-3">
-                <label for="opponent" class="form-label">Opponent:</label>
+                <label for="opponent" class="form-label">Opponent - enter LAST DIGIT from score only:</label>
                 <input type="text" id="opponent" name="opponent" class="form-control" value="{{ score[1] }}" required>
             </div>
 

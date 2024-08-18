@@ -45,10 +45,13 @@
                         <div class="d-flex justify-content-between align-items-center bg-light p-2 border rounded">
                             <span>Week {{ week[1] }} - Date: {{ week[2] }}</span>
                             <div>
-                                <!-- You can add additional functionality here if needed --> Score: {{ week[3] }} {{ week[4] }}
+                    
                                 <a href="{{ url_for('view_week', season_id=season_id, week_id=week[0]) }}" class="btn btn-sm btn-primary me-2">View Week</a>
-                                <a href="{{ url_for('enter_score', season_id=season_id, week_id=week[0]) }}" class="btn btn-sm btn-primary me-2">Enter Score</a>
+                                {% if week[3] %}
                                 <a href="{{ url_for('edit_score', season_id=season_id, week_id=week[0]) }}" class="btn btn-sm btn-primary me-2">Edit Score</a>
+                                {% else %}
+                                <a href="{{ url_for('enter_score', season_id=season_id, week_id=week[0]) }}" class="btn btn-sm btn-primary me-2">Enter Score</a>
+                                {% endif %}
                                    </div>
                         </div>
                     </div>

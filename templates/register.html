@@ -50,11 +50,13 @@
         
                 <div class="container">
                     <div class="row">
-                        {% for user in users %}
+                        {% for user in user_list %}
                             <div class="col-12 col-md-6 mb-3">
                                 <div class="d-flex justify-content-between align-items-center bg-light p-2 border rounded">
-                                    <span>{{ user }}</span>
-                             
+                                    <span>{{ user[0] }}</span>
+                                        <div>
+                                            <a href="{{ url_for('edit_user', username=user[0]) }}" class="btn btn-sm btn-primary me-2">Edit User</a>
+                                        </div>
                                 </div>
                             </div>
                         {% endfor %}
