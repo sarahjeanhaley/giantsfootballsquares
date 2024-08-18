@@ -32,7 +32,7 @@
         <nav class="nav justify-content-center">
             <a class="nav-link text-white" href="{{ url_for('home') }}">Home</a>
 
-            {% if 'user_id' in session %}
+            {% if 'username' in session %}
             <a class="nav-link text-white" href="{{ url_for('register') }}">Users</a>
             <a class="nav-link text-white" href="{{ url_for('add_season') }}">Seasons</a>
             <a class="nav-link text-white" href="{{ url_for('add_part') }}">Participants</a>

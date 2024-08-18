@@ -1,22 +1,34 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from functools import wraps
+from flask_sqlalchemy import SQLAlchemy
 import sqlite3
 import random
-import sqlitecloud
+import psycopg2
+import os
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Replace with your actual secret key
+#app.secret_key = 'your_secret_key'  # Replace with your actual secret key
+app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')  # Use environment variables for secret key
 
 
 ##############################################################################
-#######     **Not a Page**    Database connection - moving to sqlite in cloud for production
+#######     **Not a Page**    Database connection 
 ##############################################################################
-DATABASE = 'database.db'
+
+DATABASE_URL = 'postgresql://uchhf1qoegiojq:p439a8000da39297b69db023b6195f279ee5740b495255951979d5b929debb1c8@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/dcn9ih1ds3smg8'
+
 def get_db():
-    conn = sqlite3.connect(DATABASE)
-    #conn = sqlitecloud.connect("sqlitecloud://con7fzjcsk.sqlite.cloud:8860/database.db?apikey=nMQ31rYJ8SnQifqjx8bKRfazMf9d5GCeGUQ7VsaZCYM")
+    conn = psycopg2.connect(DATABASE_URL)
     return conn
+
+
+## local sqlitedb info, commented out - moving to postgres on heroku
+# DATABASE = 'database.db'
+#def get_db():
+#     conn = sqlite3.connect(DATABASE)
+#     return conn
+
 
 
 ##############################################################################
@@ -25,11 +37,12 @@ def get_db():
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
+        if 'username' not in session:
             flash('You need to be logged in to view this page.', 'warning')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
 
 
 ##############################################################################
@@ -40,69 +53,66 @@ def home():
     return render_template('index.html')
 
 ##############################################################################
-#######     Login
+#######     Login   ** Updated to postgres
 ##############################################################################
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
+
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT username, password FROM app_user WHERE username = ?", (username,))
+        cursor.execute("SELECT trim(username), trim(password) FROM app_user WHERE username = %s", (username,))
         user = cursor.fetchone()
-        
-        if user and check_password_hash(user[1], password):
-            session['user_id'] = user[0]  # Set the session
-            flash('Login successful!', 'success')
-            return redirect(url_for('home'))
+
+        if user:
+            db_username, db_password = user
+            if check_password_hash(db_password, password):
+                # Assuming you have a way to uniquely identify users (e.g., session ID or similar)
+                session['username'] = db_username
+                flash('Login successful!', 'success')
+                return redirect(url_for('home'))
+            else:
+                flash('Invalid credentials. Please try again.', 'error')
         else:
-            flash('Invalid credentials. Please try again.', 'error')
-        
-        conn.close()
-    
+            flash('User not found. Please try again.', 'error')
+
     return render_template('login.html')
 
 
+
+
+
 ##############################################################################
-#######     Register new users for using backend of application
+#######     Register new users for using backend of application   ** Updated to postgres
 ##############################################################################
 @app.route('/register', methods=['GET', 'POST'])
 @login_required
 def register():
+ 
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        
+
         conn = get_db()
         cursor = conn.cursor()
-        
         try:
-            cursor.execute("INSERT INTO app_user (username, password) VALUES (?, ?)", (username, hashed_password))
+            cursor.execute("INSERT INTO app_user (username, password) VALUES (%s, %s)", (username, hashed_password))
             conn.commit()
             flash('Registration successful!', 'success')
             return redirect(url_for('home'))
-        except sqlite3.IntegrityError:
+        except psycopg2.IntegrityError:
             flash('Username already exists. Please choose a different one.', 'error')
-        
         conn.close()
 
-    conn = get_db()
-    cursor = conn.cursor()   
-
-    # Fetch all current users
-    cursor.execute("SELECT username FROM app_user")
-    users = cursor.fetchall()
-    conn.close()
-
-    return render_template('register.html', users=users)
+    return render_template('register.html')
 
 
+                                                                                                                                                                                                                                                                                                                                                                                                  
 ##############################################################################
-#######     Add new participants to the application
+#######     Add new participants to the application ** Updated to postgres
 ##############################################################################
 @app.route('/add_part', methods=['GET', 'POST'])
 @login_required
@@ -114,7 +124,7 @@ def add_part():
         name = request.form['name']
         
         try:
-            cursor.execute("INSERT INTO participants (name) VALUES (?)", (name,))
+            cursor.execute("INSERT INTO participants (name) VALUES (%s)", (name,))
             conn.commit()
             flash('Added participant!', 'success')
         except sqlite3.IntegrityError:
@@ -123,7 +133,7 @@ def add_part():
         return redirect(url_for('add_part'))
     
     # Query the list of participants
-    cursor.execute("SELECT part_id, name FROM participants")
+    cursor.execute("SELECT part_id, trim(name) FROM participants")
     participants = cursor.fetchall()
 
     participant_count = len(participants)
@@ -133,7 +143,7 @@ def add_part():
     return render_template('add_part.html', participants=participants, participant_count=participant_count)
 
 ##############################################################################
-#######     Edit participant - Sub of Add Part
+#######     Edit participant - Sub of Add Part ** Updated to postgres
 ##############################################################################
 @app.route('/edit_part/<int:part_id>', methods=['GET', 'POST'])
 @login_required
@@ -145,7 +155,7 @@ def edit_part(part_id):
         new_name = request.form['name']
         
         try:
-            cursor.execute("UPDATE participants SET name = ? WHERE part_id = ?", (new_name, part_id))
+            cursor.execute("UPDATE participants SET name = %s WHERE part_id = %s", (new_name, part_id))
             conn.commit()
             flash('Participant updated successfully!', 'success')
         except Exception as e:
@@ -153,7 +163,7 @@ def edit_part(part_id):
         return redirect(url_for('add_part'))
 
     # Fetch the current participant details
-    cursor.execute("SELECT name FROM participants WHERE part_id = ?", (part_id,))
+    cursor.execute("SELECT trim(name) FROM participants WHERE part_id = %s", (part_id,))
     participant = cursor.fetchone()
 
     conn.close()
@@ -161,7 +171,7 @@ def edit_part(part_id):
     return render_template('edit_part.html', participant=participant, part_id=part_id)
 
 ##############################################################################
-#######     delete participant - Sub of Add Part
+#######     delete participant - Sub of Add Part ** Updated to postgres
 ##############################################################################
 @app.route('/delete_part/<int:part_id>', methods=['POST'])
 @login_required
@@ -170,7 +180,7 @@ def delete_part(part_id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("DELETE FROM participants WHERE part_id = ?", (part_id,))
+        cursor.execute("DELETE FROM participants WHERE part_id = %s", (part_id,))
         conn.commit()
         flash('Participant deleted successfully!', 'success')
     except Exception as e:
@@ -182,7 +192,7 @@ def delete_part(part_id):
 
 
 ##############################################################################
-#######     Manage seasons (Add, assign users to squares)
+#######     Manage seasons (Add, assign users to squares) ** Updated to postgres
 ##############################################################################
 @app.route('/add_season', methods=['GET', 'POST'])
 @login_required
@@ -197,7 +207,7 @@ def add_season():
         
         
         try:
-            cursor.execute("INSERT INTO seasons (season_year, season_desc) VALUES (?, ?)", (seasonyear, seasondesc))
+            cursor.execute("INSERT INTO seasons (season_year, season_desc) VALUES (%s, %s)", (seasonyear, seasondesc))
             conn.commit()
             flash('Added season!', 'success')
             return redirect(url_for('add_season'))
@@ -205,7 +215,7 @@ def add_season():
             flash('Season already exists. Please choose a different one.', 'error')
         
     # Query the list of users
-    cursor.execute("SELECT season_id, season_year, season_desc FROM seasons")
+    cursor.execute("SELECT season_id, season_year, trim(season_desc) FROM seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
 
     conn.close()
