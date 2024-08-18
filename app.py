@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from functools import wraps
-from flask_sqlalchemy import SQLAlchemy
 import sqlite3
 import random
 import psycopg2
@@ -8,28 +7,22 @@ import os
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-#app.secret_key = 'your_secret_key'  # Replace with your actual secret key
 app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')  # Use environment variables for secret key
 
 
 ##############################################################################
 #######     **Not a Page**    Database connection 
 ##############################################################################
-
 DATABASE_URL = 'postgresql://uchhf1qoegiojq:p439a8000da39297b69db023b6195f279ee5740b495255951979d5b929debb1c8@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/dcn9ih1ds3smg8'
-
 def get_db():
     conn = psycopg2.connect(DATABASE_URL)
     return conn
-
 
 ## local sqlitedb info, commented out - moving to postgres on heroku
 # DATABASE = 'database.db'
 #def get_db():
 #     conn = sqlite3.connect(DATABASE)
 #     return conn
-
-
 
 ##############################################################################
 #######     **Not a Page**    Require login function
@@ -42,8 +35,6 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
-
-
 
 ##############################################################################
 #######     Home Page
@@ -80,10 +71,6 @@ def login():
 
     return render_template('login.html')
 
-
-
-
-
 ##############################################################################
 #######     Register new users for using backend of application   ** Updated to postgres
 ##############################################################################
@@ -108,9 +95,7 @@ def register():
         conn.close()
 
     return render_template('register.html')
-
-
-                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                              
 ##############################################################################
 #######     Add new participants to the application ** Updated to postgres
 ##############################################################################
@@ -190,7 +175,6 @@ def delete_part(part_id):
 
     return redirect(url_for('add_part'))
 
-
 ##############################################################################
 #######     Manage seasons (Add, assign users to squares) ** Updated to postgres
 ##############################################################################
@@ -222,11 +206,8 @@ def add_season():
     
     return render_template('add_season.html', seasons=seasons)
 
-
-
-
 ##############################################################################
-#######     Assign participants to the grid, by the season
+#######     Assign participants to the grid, by the season ** Updated to postgres
 ##############################################################################
 
 # Initialize an empty 10x10 grid
@@ -247,14 +228,14 @@ def assign(season_id):
     participants = cursor.fetchall()
 
     # Fetch the specific season details
-    cursor.execute('SELECT season_id, season_year, season_desc FROM seasons WHERE season_id = ?', (season_id,))
+    cursor.execute('SELECT season_id, season_year, season_desc FROM seasons WHERE season_id = %s', (season_id,))
     seasons = cursor.fetchone()
 
     # Fetch already assigned spots for this season, including the participant name
     cursor.execute('''SELECT grid_index, participants.name 
                   FROM grid_spots 
                   JOIN participants ON grid_spots.user_part_id = participants.part_id 
-                  WHERE seasonID = ?''', (season_id,))
+                  WHERE seasonID = %s''', (season_id,))
     assigned_spots = {row[0]: row[1] for row in cursor.fetchall()}  # Convert to dictionary
 
 
@@ -280,7 +261,7 @@ def assign(season_id):
                 try:
                     for square in selected_squares:
                         cursor.execute(
-                            "INSERT INTO grid_spots (seasonID, user_part_id, grid_index) VALUES (?, ?, ?)",
+                            "INSERT INTO grid_spots (seasonID, user_part_id, grid_index) VALUES (%s, %s, %s)",
                             (season_id, user_part_id, int(square))
                         )
                     conn.commit()
@@ -290,7 +271,6 @@ def assign(season_id):
                     flash(f'Error assigning squares: {str(e)}', 'error')
     
     return render_template('assign.html', grid_size=grid_size, assigned_spots=assigned_spots, participants=participants, seasons=seasons)
-
 
 ##############################################################################
 #######     Set up weekly grid 
@@ -315,7 +295,7 @@ def setup_week(season_id):
         try:
             # Insert the week details and random numbers into the table
             cursor.execute(
-            "INSERT INTO weeks (season_id, season_week_number, game_date, x_axis, y_axis) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO weeks (season_id, season_week_number, game_date, x_axis, y_axis) VALUES (%s, %s, %s, %s, %s)",
             (season_id, week_number, game_date, x_string, y_string)
                     )
             conn.commit()
@@ -323,27 +303,29 @@ def setup_week(season_id):
             return redirect(url_for('setup_week', season_id=season_id))
         except Exception as e:
             flash(f'Error setting up week: {str(e)}', 'error')
-    
+
+    #### LEFT OFF HERE!!!! ####
+
     # Fetch the season name based on the season_id
-    cursor.execute("SELECT season_desc FROM seasons WHERE season_id = ?", (season_id,))
-    season = cursor.fetchone()
+    #cursor.execute("SELECT season_desc FROM seasons WHERE season_id = %s", (season_id,))
+    #season = cursor.fetchone()
     
-    if season:
-        season_desc = season[0]
-    else:
-        flash('Season not found.', 'error')
-        return redirect(url_for('some_other_route'))
+    #if season:   , season_desc=season_desc
+    #    season_desc = season[0]
+    #else:
+    #    flash('Season not found.', 'error')
+    #    return redirect(url_for('some_other_route'))
 
     # Fetch the list of weeks for the selected season
-    cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent FROM weeks where season_id = ?", (season_id,))
+    cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent FROM weeks where season_id = %s", (season_id,))
     weeks_info = cursor.fetchall()
 
     conn.close()
     
-    return render_template('setup_week.html', season_id=season_id, season_desc=season_desc, weeks_info=weeks_info)
+    return render_template('setup_week.html', season_id=season_id, weeks_info=weeks_info)
 
 ##############################################################################
-#######     View Week
+#######     View Week ** updated to postgres
 ##############################################################################
 @app.route('/view_week/<int:season_id>/<int:week_id>')
 def view_week(season_id, week_id):
@@ -351,10 +333,10 @@ def view_week(season_id, week_id):
     cursor = conn.cursor()
 
     # Fetch X axis and Y axis numbers as individual integers
-    cursor.execute('''SELECT y_axis FROM weeks WHERE season_id = ? AND week_id = ?''', (season_id, week_id))
+    cursor.execute('''SELECT y_axis FROM weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
     y_axis = cursor.fetchone()
 
-    cursor.execute('''SELECT x_axis FROM weeks WHERE season_id = ? AND week_id = ?''', (season_id, week_id))
+    cursor.execute('''SELECT x_axis FROM weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
     x_axis = cursor.fetchone()
     
     if x_axis is None:
@@ -384,7 +366,7 @@ def view_week(season_id, week_id):
     cursor.execute('''SELECT name, grid_index
                       FROM participants 
                       LEFT JOIN grid_spots ON part_id = user_part_id
-                      WHERE seasonid = ?''', (season_id,))
+                      WHERE seasonid = %s''', (season_id,))
     grid_data = cursor.fetchall()
     grid_dict = {index: name for name, index in grid_data}
     # Close the connection
@@ -395,10 +377,8 @@ def view_week(season_id, week_id):
 
     return render_template('view_week.html', x_axis=x_axis, y_axis=y_axis, grid_dict=grid_dict, week_id=week_id, season_id=season_id)
 
-
-
 ##############################################################################
-#######     Enter Score (For Season - Week)
+#######     Enter Score (For Season - Week)  ** Updated for postgres
 ##############################################################################
 @app.route('/enter_score/<int:season_id>/<int:week_id>', methods=['GET', 'POST'])
 @login_required
@@ -413,7 +393,7 @@ def enter_score(season_id, week_id):
         giants = request.form['giants']
         opponent = request.form['opponent']
         try:
-            cursor.execute('''UPDATE weeks SET giants = ?, opponent = ? WHERE season_id = ? AND week_id = ?''', (giants, opponent, season_id, week_id))
+            cursor.execute('''UPDATE weeks SET giants = %s, opponent = %s WHERE season_id = %s AND week_id = %s''', (giants, opponent, season_id, week_id))
             conn.commit()
             flash('Added score!', 'success')
             return redirect(url_for('setup_week', week_id=week_id, season_id=season_id))
@@ -425,12 +405,8 @@ def enter_score(season_id, week_id):
     
     return render_template('enter_score.html', week_id=week_id, season_id=season_id)
 
-
-
-
-
 ##############################################################################
-#######     Edit Score (For Season - Week)
+#######     Edit Score (For Season - Week)  ** Updated for postgres
 ##############################################################################
 @app.route('/edit_score/<int:season_id>/<int:week_id>', methods=['GET', 'POST'])
 @login_required
@@ -442,7 +418,7 @@ def edit_score(season_id, week_id):
         giants = request.form['giants']
         opponent = request.form['opponent']
         try:
-            cursor.execute('''UPDATE weeks SET giants = ?, opponent = ? WHERE season_id = ? AND week_id = ?''', (giants, opponent, season_id, week_id))
+            cursor.execute('''UPDATE weeks SET giants = %s, opponent = %s WHERE season_id = %s AND week_id = %s''', (giants, opponent, season_id, week_id))
             conn.commit()
             flash('Edited score!', 'success')
             return redirect(url_for('setup_week', week_id=week_id, season_id=season_id))
@@ -452,21 +428,20 @@ def edit_score(season_id, week_id):
 
 
     # Fetch the current score data
-    cursor.execute("SELECT giants, opponent FROM weeks WHERE season_id = ? AND week_id = ?", (season_id, week_id,))
+    cursor.execute("SELECT giants, opponent FROM weeks WHERE season_id = %s AND week_id = %s", (season_id, week_id,))
     score = cursor.fetchone()
 
     #Get week date data to display
-    cursor.execute("SELECT season_week_number, game_date FROM weeks WHERE season_id = ? and week_id = ?", (season_id, week_id))
+    cursor.execute("SELECT season_week_number, game_date FROM weeks WHERE season_id = %s and week_id = %s", (season_id, week_id))
     week_data = cursor.fetchone()
 
     #Get the season name to display
-    cursor.execute("SELECT season_desc FROM seasons WHERE season_id = ?", (season_id,))
+    cursor.execute("SELECT season_desc FROM seasons WHERE season_id = %s", (season_id,))
     season_data = cursor.fetchone()
 
     conn.close()
     
     return render_template('edit_score.html', week_id=week_id, season_id=season_id, score=score, week_data=week_data, season_data=season_data)
-
 
 ##############################################################################
 #######     Log Out
@@ -477,7 +452,6 @@ def logout():
     session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('home'))
-
 
 if __name__ == '__main__':
     app.run(debug=True)
