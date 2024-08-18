@@ -1,4 +1,13 @@
-flask
-sqlitecloud
-gunicorn
-jinja2
+blinker==1.8.2
+click==8.1.7
+Flask==3.0.3
+function==1.2.0
+gunicorn==23.0.0
+itsdangerous==2.2.0
+Jinja2==3.1.4
+lz4==4.3.3
+MarkupSafe==2.1.5
+names==0.3.0
+packaging==24.1
+sqlitecloud==0.0.78
+Werkzeug==3.0.3
