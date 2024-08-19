@@ -363,35 +363,16 @@ def setup_week(season_id):
         except Exception as e:
             flash(f'Error setting up week: {str(e)}', 'error')
 
-    #### Do I need this part?? ####
-    # Fetch the season name based on the season_id
-    #cursor.execute("SELECT season_desc FROM seasons WHERE season_id = %s", (season_id,))
-    #season = cursor.fetchone()
-    #if season:   , season_desc=season_desc
-    #    season_desc = season[0]
-    #else:
-    #    flash('Season not found.', 'error')
-    #    return redirect(url_for('some_other_route'))
-
     # Fetch the list of weeks for the selected season
     cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent, status FROM weeks where season_id = %s", (season_id,))
     weeks_info = cursor.fetchall()
     weeks_info = sorted(weeks_info, key=lambda x: x[1])
 
-    # Determine the current week
-    cursor.execute("""
-    SELECT week_id
-    FROM weeks
-    WHERE status = 'C' order by week_id DESC
-    """)
-    current_week_id = cursor.fetchone()
-    current_week_id = current_week_id[0]
-
     conn.close()
-    return render_template('setup_week.html', season_id=season_id, weeks_info=weeks_info, current_week_id=current_week_id)
+    return render_template('setup_week.html', season_id=season_id, weeks_info=weeks_info)
 
 ##############################################################################
-#######     View Week ** updated to postgres
+#######     View Week 
 ##############################################################################
 @app.route('/view_week/<int:season_id>/<int:week_id>')
 def view_week(season_id, week_id):
@@ -419,14 +400,6 @@ def view_week(season_id, week_id):
     x_axis_export_tuple = x_axis[0]
     x_axis_string=str(x_axis_export_tuple)
     x_axis = [int(char) for char in x_axis_string]
-
-    # # Fetch the participants' grid positions
-    # cursor.execute('''SELECT name, listx, listy
-    #                   FROM participants 
-    #                   LEFT JOIN grid_spots ON part_id = user_part_id
-    #                   LEFT JOIN board_conversion ON board_index = grid_index
-    #                   WHERE seasonid = ?''', (season_id,))
-    # grid_data = cursor.fetchall()
 
     #Fetch the participants' grid positions
     cursor.execute('''SELECT name, grid_index
@@ -521,24 +494,15 @@ def update_week_status(season_id, week_id, status):
 
     try:
         cursor.execute("UPDATE weeks SET status = %s WHERE week_id = %s", (status, week_id))
-        conn.commit()
+        conn.commit()        
         flash('Week status updated successfully!', 'success')
     except Exception as e:
         flash(f'Error updating week status: {e}', 'error')
 
-    if status == 'F':
-        print('finalizewd')
-    elif status =='C':  
-        print('complete')
-
-    # Fetch the list of weeks for the selected season
-    cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent, status FROM weeks where season_id = %s", (season_id,))
-    weeks_info = cursor.fetchall()
-
     cursor.close()
     conn.close()
     
-    return redirect(url_for('add_season'))
+    return redirect(url_for('setup_week', season_id=season_id))
 
 
 ##############################################################################
