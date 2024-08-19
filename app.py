@@ -244,6 +244,8 @@ def add_season():
 def update_season_status(season_id, status):
     conn = get_db()
     cursor = conn.cursor()
+
+
     try:
         cursor.execute("UPDATE seasons SET season_status = %s WHERE season_id = %s", (status, season_id))
         conn.commit()
@@ -267,7 +269,7 @@ def update_season_status(season_id, status):
     #     except Exception as e:
     #         flash(f'Error updating season status: {e}', 'error')
 
-    # Query the list of seasons
+
     cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status FROM seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
     seasons = sorted(seasons, key=lambda x: x[0])
