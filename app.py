@@ -228,7 +228,7 @@ def add_season():
             flash('Season already exists. Please choose a different one.', 'error')
         
     # Query the list of seasons
-    cursor.execute("SELECT season_id, season_year, trim(season_desc) FROM seasons")
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status FROM seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
 
     conn.close()
@@ -237,14 +237,13 @@ def add_season():
 
 
 ##############################################################################
-#######     Update season
+#######     Update season status
 ##############################################################################
 @app.route('/update_season_status/<int:season_id>/<string:status>', methods=['GET', 'POST'])
 @login_required
 def update_season_status(season_id, status):
     conn = get_db()
     cursor = conn.cursor()
-
     try:
         cursor.execute("UPDATE seasons SET season_status = %s WHERE season_id = %s", (status, season_id))
         conn.commit()
@@ -252,14 +251,26 @@ def update_season_status(season_id, status):
     except Exception as e:
         flash(f'Error updating season status: {e}', 'error')
 
-    if status == 'F':
-        print('finalizewd')
-    elif status =='C':  
-        print('complete')
+    # if status == 'C':
+    #     try:
+    #         cursor.execute("UPDATE seasons SET season_status = 'O' WHERE season_status = 'C' and season_id != %s", (season_id))
+    #         cursor.execute("UPDATE seasons SET season_status = 'C' WHERE season_id = %s", (season_id))
+    #         conn.commit()
+    #         flash('Season status updated successfully!', 'success')
+    #     except Exception as e:
+    #         flash(f'Error updating season status: {e}', 'error')
+    # else:
+    #     try:
+    #         cursor.execute("UPDATE seasons SET season_status = %s WHERE season_id = %s", (status, season_id))
+    #         conn.commit()
+    #         flash('Season status updated successfully!', 'success')
+    #     except Exception as e:
+    #         flash(f'Error updating season status: {e}', 'error')
 
     # Query the list of seasons
     cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status FROM seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
+    seasons = sorted(seasons, key=lambda x: x[0])
 
     cursor.close()
     conn.close()
@@ -334,7 +345,6 @@ def assign(season_id):
 ##############################################################################
 #######     Set up weekly grid, Manage weeks
 ##############################################################################
-
 @app.route('/setup_week/<int:season_id>', methods=['GET', 'POST'])
 @login_required
 def setup_week(season_id):
@@ -417,7 +427,7 @@ def view_week(season_id, week_id):
     return render_template('view_week.html', x_axis=x_axis, y_axis=y_axis, grid_dict=grid_dict, week_id=week_id, season_id=season_id)
 
 ##############################################################################
-#######     Enter Score (For Season - Week)  ** Updated for postgres
+#######     Enter Score (For Season - Week)  
 ##############################################################################
 @app.route('/enter_score/<int:season_id>/<int:week_id>', methods=['GET', 'POST'])
 @login_required
@@ -445,7 +455,7 @@ def enter_score(season_id, week_id):
     return render_template('enter_score.html', week_id=week_id, season_id=season_id)
 
 ##############################################################################
-#######     Edit Score (For Season - Week)  ** Updated for postgres
+#######     Edit Score (For Season - Week)  
 ##############################################################################
 @app.route('/edit_score/<int:season_id>/<int:week_id>', methods=['GET', 'POST'])
 @login_required

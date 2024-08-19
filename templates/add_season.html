@@ -56,11 +56,15 @@
             
                     <span> {{ season[1] }} - {{ season[2] }}</span> 
                     <div>
+
+                        {% if season[3] != 'C' and season[3] != 'F'  %} 
                         <a href="{{ url_for('update_season_status', season_id=season[0], status='C') }}" class="btn btn-sm btn-success me-2">Mark as Current Season</a>
-                        <a href="{{ url_for('update_season_status', season_id=season[0], status='O') }}" class="btn btn-sm btn-dark me-2">Reset Status</a>
-                        <a href="{{ url_for('update_season_status', season_id=season[0], status='F') }}" class="btn btn-sm btn-warning me-2">Finalize Season</a>
-                        <a href="{{ url_for('assign', season_id=season[0]) }}" class="btn btn-sm btn-primary me-2">Manage Participants</a>
+                        {% endif %}
+                        {% if season[3] != 'F' %} <a href="{{ url_for('update_season_status', season_id=season[0], status='F') }}" class="btn btn-sm btn-warning me-2">Finalize Season</a>
+                        {% endif %}<a href="{{ url_for('assign', season_id=season[0]) }}" class="btn btn-sm btn-primary me-2">Manage Participants</a>
                         <a href="{{ url_for('setup_week', season_id=season[0]) }}" class="btn btn-sm btn-primary me-2">Manage Weeks</a>
+                        <a href="{{ url_for('update_season_status', season_id=season[0], status='O') }}" class="btn btn-sm btn-dark me-2">Reset Status</a>
+                        
                     </div>
                 </div>
             </div>
