@@ -51,7 +51,10 @@ print(actual_x)
 print(actual_y)
 
 # Calculate the 1-based index number
-index_number = actual_y * 10 + (actual_x + 1)
-print(index_number)
+winning_index = actual_y * 10 + (actual_x + 1)
+
+print(winning_index)
+if (winning_index >= 21 and winning_index <= 40) or (winning_index >= 61 and winning_index <= 80): 
+    print("carry over")
 
  

@@ -218,9 +218,10 @@ def add_season():
     if request.method == 'POST':
         seasonyear = request.form['seasonyear']
         seasondesc = request.form['seasondesc']
+        weeklypot = request.form['weeklypot']
         
         try:
-            cursor.execute("INSERT INTO seasons (season_year, season_desc) VALUES (%s, %s)", (seasonyear, seasondesc))
+            cursor.execute("INSERT INTO seasons (season_year, season_desc, weekly_pot) VALUES (%s, %s, %s)", (seasonyear, seasondesc, weeklypot))
             conn.commit()
             flash('Added season!', 'success')
             return redirect(url_for('add_season'))
@@ -228,12 +229,44 @@ def add_season():
             flash('Season already exists. Please choose a different one.', 'error')
         
     # Query the list of seasons
-    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status FROM seasons")
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot FROM seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
 
     conn.close()
     
     return render_template('add_season.html', seasons=seasons)
+
+
+##############################################################################
+#######     Edit season 
+##############################################################################
+@app.route('/edit_season/<int:season_id>', methods=['GET', 'POST'])
+@login_required
+def edit_season(season_id):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        seasonyear = request.form['seasonyear']
+        seasondesc = request.form['seasondesc']
+        weeklypot = request.form['weeklypot']
+        try:
+            # Corrected SQL syntax, using only one SET keyword
+            cursor.execute("UPDATE seasons SET season_year = %s, season_desc = %s, weekly_pot = %s WHERE season_id = %s", (seasonyear, seasondesc, weeklypot, season_id))
+            conn.commit()
+            flash('Season updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating Season: {str(e)}', 'error')
+        return redirect(url_for('add_season'))
+
+    # Query the season data
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot FROM seasons WHERE season_id = %s", (season_id,))
+    season = cursor.fetchone()  # Fetch the single row as a tuple
+
+    cursor.close()
+    conn.close()
+    return render_template('edit_season.html', season=season)
+
 
 
 ##############################################################################
@@ -539,11 +572,13 @@ def update_week_status(season_id, week_id, status):
         y_values = [int(char) for char in all_y_values]
         actual_x = x_values.index(giants_x)
         actual_y = y_values.index(opponent_y)
-
         winning_index = actual_y * 10 + (actual_x + 1)
         
         cursor.execute("UPDATE weeks SET winning_index = %s WHERE week_id = %s", (winning_index, week_id))
         conn.commit()   
+
+        if (winning_index >= 21 and winning_index <= 40) or (winning_index >= 61 and winning_index <= 80): 
+            print("carry over")
 
     cursor.close()
     conn.close()
