@@ -253,6 +253,7 @@ def update_season_status(season_id, status):
     except Exception as e:
         flash(f'Error updating season status: {e}', 'error')
 
+    #### Need to figure this part out.
     # if status == 'C':
     #     try:
     #         cursor.execute("UPDATE seasons SET season_status = 'O' WHERE season_status = 'C' and season_id != %s", (season_id))
@@ -281,7 +282,7 @@ def update_season_status(season_id, status):
 
 
 ##############################################################################
-#######     Assign participants to the grid, by the season ** Updated to postgres
+#######     Assign participants to the grid, by the season 
 ##############################################################################
 # Initialize an empty 10x10 grid
 grid_size = 10
@@ -494,7 +495,7 @@ def edit_score(season_id, week_id):
     return render_template('edit_score.html', week_id=week_id, season_id=season_id, score=score, week_data=week_data, season_data=season_data)
 
 ##############################################################################
-#######     Update week status
+#######     Update week status & finalize week
 ##############################################################################
 @app.route('/update_week_status/<int:season_id>/<int:week_id>/<string:status>', methods=['GET', 'POST'])
 @login_required
@@ -505,9 +506,16 @@ def update_week_status(season_id, week_id, status):
     if status == 'C':
         try:
             cursor.execute("UPDATE weeks SET status = 'O' WHERE status = 'C' AND week_id != %s", (week_id,))
-            cursor.execute("UPDATE weeks SET status = %s WHERE week_id = %s", (status, week_id))
+            cursor.execute("UPDATE weeks SET status = %s, winning_index = 0 WHERE week_id = %s", (status, week_id))
             conn.commit()        
             flash('Week status updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating week status: {e}', 'error')
+    elif status == 'O':
+        try:
+            cursor.execute("UPDATE weeks SET status = %s, winning_index = 0 WHERE week_id = %s", (status, week_id))
+            conn.commit()    
+            flash('Week status updated successfully!', 'success')    
         except Exception as e:
             flash(f'Error updating week status: {e}', 'error')
     else:
@@ -517,6 +525,25 @@ def update_week_status(season_id, week_id, status):
             flash('Week status updated successfully!', 'success')
         except Exception as e:
             flash(f'Error updating week status: {e}', 'error')
+
+    if status == 'F':
+        cursor.execute("SELECT giants, opponent, x_axis, y_axis FROM weeks WHERE week_id = %s", (week_id,))
+        week_data = cursor.fetchone()
+
+        giants_x = week_data[0]
+        opponent_y = week_data[1]
+        all_x_values = week_data[2]
+        all_y_values = week_data[3]
+
+        x_values = [int(char) for char in all_x_values]
+        y_values = [int(char) for char in all_y_values]
+        actual_x = x_values.index(giants_x)
+        actual_y = y_values.index(opponent_y)
+
+        winning_index = actual_y * 10 + (actual_x + 1)
+        
+        cursor.execute("UPDATE weeks SET winning_index = %s WHERE week_id = %s", (winning_index, week_id))
+        conn.commit()   
 
     cursor.close()
     conn.close()

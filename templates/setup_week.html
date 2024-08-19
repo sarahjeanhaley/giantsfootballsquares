@@ -55,12 +55,12 @@
                             </span>
                             <div>
                                 <a href="{{ url_for('view_week', season_id=season_id, week_id=week[0]) }}" class="btn btn-sm btn-primary me-2">View Week</a>
-                                {% if week[5] != 'C' %} 
+                                {% if week[5] != 'C' and  week[5] != 'F' %} 
                                     <a href="{{ url_for('update_week_status', season_id=season_id, week_id=week[0], status='C') }}" class="btn btn-sm btn-success me-2">Mark as Current Week</a>
                                 {% endif %}
                                 {% if week[3] %}
-                                    <a href="{{ url_for('edit_score', season_id=season_id, week_id=week[0]) }}" class="btn btn-sm btn-warning me-2">Edit Score</a>
-                                        {% if week[5] != 'F' %} 
+                                    
+                                        {% if week[5] != 'F' %} <a href="{{ url_for('edit_score', season_id=season_id, week_id=week[0]) }}" class="btn btn-sm btn-warning me-2">Edit Score</a>
                                             <a href="{{ url_for('update_week_status', season_id=season_id, week_id=week[0], status='F') }}" class="btn btn-sm btn-secondary me-2">Finalize Week</a>
                                         {% endif %}
                                     {% else %}
