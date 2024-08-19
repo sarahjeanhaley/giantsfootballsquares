@@ -258,7 +258,7 @@ def update_season_status(season_id, status):
         print('complete')
 
     # Query the list of seasons
-    cursor.execute("SELECT season_id, season_year, trim(season_desc) FROM seasons")
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status FROM seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
 
     cursor.close()
@@ -483,8 +483,6 @@ def edit_score(season_id, week_id):
 
 ##############################################################################
 #######     Update week status
-
-##### START HERE - it's not updating the week statuses correctly
 ##############################################################################
 @app.route('/update_week_status/<int:season_id>/<int:week_id>/<string:status>', methods=['GET', 'POST'])
 @login_required
@@ -492,12 +490,21 @@ def update_week_status(season_id, week_id, status):
     conn = get_db()
     cursor = conn.cursor()
 
-    try:
-        cursor.execute("UPDATE weeks SET status = %s WHERE week_id = %s", (status, week_id))
-        conn.commit()        
-        flash('Week status updated successfully!', 'success')
-    except Exception as e:
-        flash(f'Error updating week status: {e}', 'error')
+    if status == 'C':
+        try:
+            cursor.execute("UPDATE weeks SET status = 'O' WHERE status = 'C' AND week_id != %s", (week_id,))
+            cursor.execute("UPDATE weeks SET status = %s WHERE week_id = %s", (status, week_id))
+            conn.commit()        
+            flash('Week status updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating week status: {e}', 'error')
+    else:
+        try:
+            cursor.execute("UPDATE weeks SET status = %s WHERE week_id = %s", (status, week_id))
+            conn.commit()        
+            flash('Week status updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating week status: {e}', 'error')
 
     cursor.close()
     conn.close()
