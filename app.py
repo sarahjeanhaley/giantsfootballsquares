@@ -219,7 +219,6 @@ def add_season():
         seasonyear = request.form['seasonyear']
         seasondesc = request.form['seasondesc']
         
-        
         try:
             cursor.execute("INSERT INTO seasons (season_year, season_desc) VALUES (%s, %s)", (seasonyear, seasondesc))
             conn.commit()
@@ -228,7 +227,7 @@ def add_season():
         except sqlite3.IntegrityError:
             flash('Season already exists. Please choose a different one.', 'error')
         
-    # Query the list of users
+    # Query the list of seasons
     cursor.execute("SELECT season_id, season_year, trim(season_desc) FROM seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
 
@@ -236,10 +235,41 @@ def add_season():
     
     return render_template('add_season.html', seasons=seasons)
 
+
+##############################################################################
+#######     Update season
+##############################################################################
+@app.route('/update_season_status/<int:season_id>/<string:status>', methods=['GET', 'POST'])
+@login_required
+def update_season_status(season_id, status):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("UPDATE seasons SET season_status = %s WHERE season_id = %s", (status, season_id))
+        conn.commit()
+        flash('Season status updated successfully!', 'success')
+    except Exception as e:
+        flash(f'Error updating season status: {e}', 'error')
+
+    if status == 'F':
+        print('finalizewd')
+    elif status =='C':  
+        print('complete')
+
+    # Query the list of seasons
+    cursor.execute("SELECT season_id, season_year, trim(season_desc) FROM seasons")
+    seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
+
+    cursor.close()
+    conn.close()
+    
+    return render_template('add_season.html', seasons=seasons)
+
+
 ##############################################################################
 #######     Assign participants to the grid, by the season ** Updated to postgres
 ##############################################################################
-
 # Initialize an empty 10x10 grid
 grid_size = 10
 grid = [['' for _ in range(grid_size)] for _ in range(grid_size)]
@@ -267,7 +297,6 @@ def assign(season_id):
                   JOIN participants ON grid_spots.user_part_id = participants.part_id 
                   WHERE seasonID = %s''', (season_id,))
     assigned_spots = {row[0]: row[1] for row in cursor.fetchall()}  # Convert to dictionary
-
 
     if request.method == 'POST':
         user_part_id = request.form['user_part_id']
@@ -303,7 +332,7 @@ def assign(season_id):
     return render_template('assign.html', grid_size=grid_size, assigned_spots=assigned_spots, participants=participants, seasons=seasons)
 
 ##############################################################################
-#######     Set up weekly grid 
+#######     Set up weekly grid, Manage weeks
 ##############################################################################
 
 @app.route('/setup_week/<int:season_id>', methods=['GET', 'POST'])
@@ -334,12 +363,10 @@ def setup_week(season_id):
         except Exception as e:
             flash(f'Error setting up week: {str(e)}', 'error')
 
-    #### LEFT OFF HERE!!!! ####
-
+    #### Do I need this part?? ####
     # Fetch the season name based on the season_id
     #cursor.execute("SELECT season_desc FROM seasons WHERE season_id = %s", (season_id,))
     #season = cursor.fetchone()
-    
     #if season:   , season_desc=season_desc
     #    season_desc = season[0]
     #else:
@@ -347,12 +374,21 @@ def setup_week(season_id):
     #    return redirect(url_for('some_other_route'))
 
     # Fetch the list of weeks for the selected season
-    cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent FROM weeks where season_id = %s", (season_id,))
+    cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent, status FROM weeks where season_id = %s", (season_id,))
     weeks_info = cursor.fetchall()
+    weeks_info = sorted(weeks_info, key=lambda x: x[1])
+
+    # Determine the current week
+    cursor.execute("""
+    SELECT week_id
+    FROM weeks
+    WHERE status = 'C' order by week_id DESC
+    """)
+    current_week_id = cursor.fetchone()
+    current_week_id = current_week_id[0]
 
     conn.close()
-    
-    return render_template('setup_week.html', season_id=season_id, weeks_info=weeks_info)
+    return render_template('setup_week.html', season_id=season_id, weeks_info=weeks_info, current_week_id=current_week_id)
 
 ##############################################################################
 #######     View Week ** updated to postgres
@@ -456,7 +492,6 @@ def edit_score(season_id, week_id):
         except sqlite3.IntegrityError:
             flash('Score already exists. Please choose a different one.', 'error')
 
-
     # Fetch the current score data
     cursor.execute("SELECT giants, opponent FROM weeks WHERE season_id = %s AND week_id = %s", (season_id, week_id,))
     score = cursor.fetchone()
@@ -472,6 +507,39 @@ def edit_score(season_id, week_id):
     conn.close()
     
     return render_template('edit_score.html', week_id=week_id, season_id=season_id, score=score, week_data=week_data, season_data=season_data)
+
+##############################################################################
+#######     Update week status
+
+##### START HERE - it's not updating the week statuses correctly
+##############################################################################
+@app.route('/update_week_status/<int:season_id>/<int:week_id>/<string:status>', methods=['GET', 'POST'])
+@login_required
+def update_week_status(season_id, week_id, status):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("UPDATE weeks SET status = %s WHERE week_id = %s", (status, week_id))
+        conn.commit()
+        flash('Week status updated successfully!', 'success')
+    except Exception as e:
+        flash(f'Error updating week status: {e}', 'error')
+
+    if status == 'F':
+        print('finalizewd')
+    elif status =='C':  
+        print('complete')
+
+    # Fetch the list of weeks for the selected season
+    cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent, status FROM weeks where season_id = %s", (season_id,))
+    weeks_info = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+    
+    return redirect(url_for('add_season'))
+
 
 ##############################################################################
 #######     Log Out
