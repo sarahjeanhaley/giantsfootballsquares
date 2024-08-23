@@ -218,9 +218,10 @@ def add_season():
     if request.method == 'POST':
         seasonyear = request.form['seasonyear']
         seasondesc = request.form['seasondesc']
+        weeklypot = request.form['weeklypot']
         
         try:
-            cursor.execute("INSERT INTO seasons (season_year, season_desc) VALUES (%s, %s)", (seasonyear, seasondesc))
+            cursor.execute("INSERT INTO seasons (season_year, season_desc, weekly_pot) VALUES (%s, %s, %s)", (seasonyear, seasondesc, weeklypot))
             conn.commit()
             flash('Added season!', 'success')
             return redirect(url_for('add_season'))
@@ -228,7 +229,7 @@ def add_season():
             flash('Season already exists. Please choose a different one.', 'error')
         
     # Query the list of seasons
-    cursor.execute("SELECT season_id, season_year, trim(season_desc) FROM seasons")
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot FROM seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
 
     conn.close()
@@ -237,13 +238,46 @@ def add_season():
 
 
 ##############################################################################
-#######     Update season
+#######     Edit season 
+##############################################################################
+@app.route('/edit_season/<int:season_id>', methods=['GET', 'POST'])
+@login_required
+def edit_season(season_id):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        seasonyear = request.form['seasonyear']
+        seasondesc = request.form['seasondesc']
+        weeklypot = request.form['weeklypot']
+        try:
+            # Corrected SQL syntax, using only one SET keyword
+            cursor.execute("UPDATE seasons SET season_year = %s, season_desc = %s, weekly_pot = %s WHERE season_id = %s", (seasonyear, seasondesc, weeklypot, season_id))
+            conn.commit()
+            flash('Season updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating Season: {str(e)}', 'error')
+        return redirect(url_for('add_season'))
+
+    # Query the season data
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot FROM seasons WHERE season_id = %s", (season_id,))
+    season = cursor.fetchone()  # Fetch the single row as a tuple
+
+    cursor.close()
+    conn.close()
+    return render_template('edit_season.html', season=season)
+
+
+
+##############################################################################
+#######     Update season status
 ##############################################################################
 @app.route('/update_season_status/<int:season_id>/<string:status>', methods=['GET', 'POST'])
 @login_required
 def update_season_status(season_id, status):
     conn = get_db()
     cursor = conn.cursor()
+
 
     try:
         cursor.execute("UPDATE seasons SET season_status = %s WHERE season_id = %s", (status, season_id))
@@ -252,14 +286,27 @@ def update_season_status(season_id, status):
     except Exception as e:
         flash(f'Error updating season status: {e}', 'error')
 
-    if status == 'F':
-        print('finalizewd')
-    elif status =='C':  
-        print('complete')
+    #### Need to figure this part out.
+    # if status == 'C':
+    #     try:
+    #         cursor.execute("UPDATE seasons SET season_status = 'O' WHERE season_status = 'C' and season_id != %s", (season_id))
+    #         cursor.execute("UPDATE seasons SET season_status = 'C' WHERE season_id = %s", (season_id))
+    #         conn.commit()
+    #         flash('Season status updated successfully!', 'success')
+    #     except Exception as e:
+    #         flash(f'Error updating season status: {e}', 'error')
+    # else:
+    #     try:
+    #         cursor.execute("UPDATE seasons SET season_status = %s WHERE season_id = %s", (status, season_id))
+    #         conn.commit()
+    #         flash('Season status updated successfully!', 'success')
+    #     except Exception as e:
+    #         flash(f'Error updating season status: {e}', 'error')
 
-    # Query the list of seasons
-    cursor.execute("SELECT season_id, season_year, trim(season_desc) FROM seasons")
+
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status FROM seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
+    seasons = sorted(seasons, key=lambda x: x[0])
 
     cursor.close()
     conn.close()
@@ -268,7 +315,7 @@ def update_season_status(season_id, status):
 
 
 ##############################################################################
-#######     Assign participants to the grid, by the season ** Updated to postgres
+#######     Assign participants to the grid, by the season 
 ##############################################################################
 # Initialize an empty 10x10 grid
 grid_size = 10
@@ -334,7 +381,6 @@ def assign(season_id):
 ##############################################################################
 #######     Set up weekly grid, Manage weeks
 ##############################################################################
-
 @app.route('/setup_week/<int:season_id>', methods=['GET', 'POST'])
 @login_required
 def setup_week(season_id):
@@ -363,35 +409,16 @@ def setup_week(season_id):
         except Exception as e:
             flash(f'Error setting up week: {str(e)}', 'error')
 
-    #### Do I need this part?? ####
-    # Fetch the season name based on the season_id
-    #cursor.execute("SELECT season_desc FROM seasons WHERE season_id = %s", (season_id,))
-    #season = cursor.fetchone()
-    #if season:   , season_desc=season_desc
-    #    season_desc = season[0]
-    #else:
-    #    flash('Season not found.', 'error')
-    #    return redirect(url_for('some_other_route'))
-
     # Fetch the list of weeks for the selected season
     cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent, status FROM weeks where season_id = %s", (season_id,))
     weeks_info = cursor.fetchall()
     weeks_info = sorted(weeks_info, key=lambda x: x[1])
 
-    # Determine the current week
-    cursor.execute("""
-    SELECT week_id
-    FROM weeks
-    WHERE status = 'C' order by week_id DESC
-    """)
-    current_week_id = cursor.fetchone()
-    current_week_id = current_week_id[0]
-
     conn.close()
-    return render_template('setup_week.html', season_id=season_id, weeks_info=weeks_info, current_week_id=current_week_id)
+    return render_template('setup_week.html', season_id=season_id, weeks_info=weeks_info)
 
 ##############################################################################
-#######     View Week ** updated to postgres
+#######     View Week 
 ##############################################################################
 @app.route('/view_week/<int:season_id>/<int:week_id>')
 def view_week(season_id, week_id):
@@ -420,14 +447,6 @@ def view_week(season_id, week_id):
     x_axis_string=str(x_axis_export_tuple)
     x_axis = [int(char) for char in x_axis_string]
 
-    # # Fetch the participants' grid positions
-    # cursor.execute('''SELECT name, listx, listy
-    #                   FROM participants 
-    #                   LEFT JOIN grid_spots ON part_id = user_part_id
-    #                   LEFT JOIN board_conversion ON board_index = grid_index
-    #                   WHERE seasonid = ?''', (season_id,))
-    # grid_data = cursor.fetchall()
-
     #Fetch the participants' grid positions
     cursor.execute('''SELECT name, grid_index
                       FROM participants 
@@ -444,7 +463,7 @@ def view_week(season_id, week_id):
     return render_template('view_week.html', x_axis=x_axis, y_axis=y_axis, grid_dict=grid_dict, week_id=week_id, season_id=season_id)
 
 ##############################################################################
-#######     Enter Score (For Season - Week)  ** Updated for postgres
+#######     Enter Score (For Season - Week)  
 ##############################################################################
 @app.route('/enter_score/<int:season_id>/<int:week_id>', methods=['GET', 'POST'])
 @login_required
@@ -472,7 +491,7 @@ def enter_score(season_id, week_id):
     return render_template('enter_score.html', week_id=week_id, season_id=season_id)
 
 ##############################################################################
-#######     Edit Score (For Season - Week)  ** Updated for postgres
+#######     Edit Score (For Season - Week)  
 ##############################################################################
 @app.route('/edit_score/<int:season_id>/<int:week_id>', methods=['GET', 'POST'])
 @login_required
@@ -509,9 +528,7 @@ def edit_score(season_id, week_id):
     return render_template('edit_score.html', week_id=week_id, season_id=season_id, score=score, week_data=week_data, season_data=season_data)
 
 ##############################################################################
-#######     Update week status
-
-##### START HERE - it's not updating the week statuses correctly
+#######     Update week status & finalize week
 ##############################################################################
 @app.route('/update_week_status/<int:season_id>/<int:week_id>/<string:status>', methods=['GET', 'POST'])
 @login_required
@@ -519,26 +536,54 @@ def update_week_status(season_id, week_id, status):
     conn = get_db()
     cursor = conn.cursor()
 
-    try:
-        cursor.execute("UPDATE weeks SET status = %s WHERE week_id = %s", (status, week_id))
-        conn.commit()
-        flash('Week status updated successfully!', 'success')
-    except Exception as e:
-        flash(f'Error updating week status: {e}', 'error')
+    if status == 'C':
+        try:
+            cursor.execute("UPDATE weeks SET status = 'O' WHERE status = 'C' AND week_id != %s", (week_id,))
+            cursor.execute("UPDATE weeks SET status = %s, winning_index = 0 WHERE week_id = %s", (status, week_id))
+            conn.commit()        
+            flash('Week status updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating week status: {e}', 'error')
+    elif status == 'O':
+        try:
+            cursor.execute("UPDATE weeks SET status = %s, winning_index = 0 WHERE week_id = %s", (status, week_id))
+            conn.commit()    
+            flash('Week status updated successfully!', 'success')    
+        except Exception as e:
+            flash(f'Error updating week status: {e}', 'error')
+    else:
+        try:
+            cursor.execute("UPDATE weeks SET status = %s WHERE week_id = %s", (status, week_id))
+            conn.commit()        
+            flash('Week status updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating week status: {e}', 'error')
 
     if status == 'F':
-        print('finalizewd')
-    elif status =='C':  
-        print('complete')
+        cursor.execute("SELECT giants, opponent, x_axis, y_axis FROM weeks WHERE week_id = %s", (week_id,))
+        week_data = cursor.fetchone()
 
-    # Fetch the list of weeks for the selected season
-    cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent, status FROM weeks where season_id = %s", (season_id,))
-    weeks_info = cursor.fetchall()
+        giants_x = week_data[0]
+        opponent_y = week_data[1]
+        all_x_values = week_data[2]
+        all_y_values = week_data[3]
+
+        x_values = [int(char) for char in all_x_values]
+        y_values = [int(char) for char in all_y_values]
+        actual_x = x_values.index(giants_x)
+        actual_y = y_values.index(opponent_y)
+        winning_index = actual_y * 10 + (actual_x + 1)
+        
+        cursor.execute("UPDATE weeks SET winning_index = %s WHERE week_id = %s", (winning_index, week_id))
+        conn.commit()   
+
+        if (winning_index >= 21 and winning_index <= 40) or (winning_index >= 61 and winning_index <= 80): 
+            print("carry over")
 
     cursor.close()
     conn.close()
     
-    return redirect(url_for('add_season'))
+    return redirect(url_for('setup_week', season_id=season_id))
 
 
 ##############################################################################

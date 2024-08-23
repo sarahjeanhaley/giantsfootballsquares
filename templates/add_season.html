@@ -15,6 +15,10 @@
                 <label for="seasondesc" class="form-label">Season Description:</label>
                 <input type="text" id="seasondesc" name="seasondesc" class="form-control" required>
             </div>
+            <div class="mb-3">
+                <label for="weeklypot" class="form-label">Weekly Pot:</label>
+                <input type="text" id="weeklypot" name="weeklypot" class="form-control" required>
+            </div>
             <button type="submit" class="btn btn-primary">Add Season</button>
         </form>
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -42,18 +46,29 @@
 
 
             <div class="col-12 mb-3">
+
+
+                {% if season[3] == 'F' %} 
+                <div class="d-flex justify-content-between align-items-center bg-dark bg-opacity-50 p-2 border rounded">
+                {% elif season[3] == 'C' %}
+                <div class="d-flex justify-content-between align-items-center bg-success bg-opacity-50 p-2 border rounded">
+                    {% else %}
                 <div class="d-flex justify-content-between align-items-center bg-light p-2 border rounded">
-                    <span> {{ season[1] }} - {{ season[2] }}</span>
+                    {% endif %}
+
+
+            
+                    <span> {{ season[1] }} - {{ season[2] }}</span> 
                     <div>
-
-                        <form id="mark-current-form" action="{{ url_for('update_season_status', season_id=season[0], status='C') }}" method="post" style="display: none;"></form>
-                        <form id="mark-finalized-form" action="{{ url_for('update_season_status', season_id=season[0], status='F') }}" method="post" style="display: none;"></form>
-                        <a href="#" onclick="document.getElementById('mark-finalized-form').submit();" class="btn btn-sm btn-danger me-2">Finalize Season</a>
-                        <a href="#" onclick="document.getElementById('mark-current-form').submit();" class="btn btn-sm btn-success me-2">Mark as Current Season</a>
-
-
-                        <a href="{{ url_for('assign', season_id=season[0]) }}" class="btn btn-sm btn-primary me-2">Manage Participants</a>
+                        <a href="{{ url_for('edit_season', season_id=season[0]) }}" class="btn btn-sm btn-primary me-2">Edit Season</a>
+                        {% if season[3] != 'C' and season[3] != 'F'  %} 
+                        <a href="{{ url_for('update_season_status', season_id=season[0], status='C') }}" class="btn btn-sm btn-success me-2">Mark as Current Season</a>
+                        {% endif %}
+                        {% if season[3] != 'F' %} <a href="{{ url_for('update_season_status', season_id=season[0], status='F') }}" class="btn btn-sm btn-warning me-2">Finalize Season</a>
+                        {% endif %}<a href="{{ url_for('assign', season_id=season[0]) }}" class="btn btn-sm btn-primary me-2">Manage Participants</a>
                         <a href="{{ url_for('setup_week', season_id=season[0]) }}" class="btn btn-sm btn-primary me-2">Manage Weeks</a>
+                        <a href="{{ url_for('update_season_status', season_id=season[0], status='O') }}" class="btn btn-sm btn-dark me-2">Reset Status</a>
+                        
                     </div>
                 </div>
             </div>
