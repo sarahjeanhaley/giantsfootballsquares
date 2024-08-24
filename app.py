@@ -410,7 +410,7 @@ def setup_week(season_id):
             flash(f'Error setting up week: {str(e)}', 'error')
 
     # Fetch the list of weeks for the selected season
-    cursor.execute("SELECT week_id, season_week_number, game_date, giants, opponent, status FROM weeks where season_id = %s", (season_id,))
+    cursor.execute("SELECT week_id, season_week_number, game_date, home_score, away_score, status FROM weeks where season_id = %s", (season_id,))
     weeks_info = cursor.fetchall()
     weeks_info = sorted(weeks_info, key=lambda x: x[1])
 
@@ -454,13 +454,13 @@ def view_week(season_id, week_id):
                       WHERE seasonid = %s''', (season_id,))
     grid_data = cursor.fetchall()
     grid_dict = {index: name for name, index in grid_data}
-    # Close the connection
+
+    cursor.execute('''SELECT home_score, away_score, status, winning_index, winning_amount FROM weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
+    week_data = cursor.fetchone()
+
     conn.close()
 
-    # Organize data into a dictionary for easy lookup
-    #grid_dict = {(listx, listy): name for name, listx, listy in grid_data}
-
-    return render_template('view_week.html', x_axis=x_axis, y_axis=y_axis, grid_dict=grid_dict, week_id=week_id, season_id=season_id)
+    return render_template('view_week.html', x_axis=x_axis, y_axis=y_axis, grid_dict=grid_dict, week_id=week_id, season_id=season_id, week_data=week_data)
 
 ##############################################################################
 #######     Enter Score (For Season - Week)  
@@ -475,10 +475,10 @@ def enter_score(season_id, week_id):
     cursor = conn.cursor()
 
     if request.method == 'POST':
-        giants = request.form['giants']
-        opponent = request.form['opponent']
+        home_score = request.form['home_score']
+        away_score = request.form['away_score']
         try:
-            cursor.execute('''UPDATE weeks SET giants = %s, opponent = %s WHERE season_id = %s AND week_id = %s''', (giants, opponent, season_id, week_id))
+            cursor.execute('''UPDATE weeks SET home_score = %s, away_score = %s WHERE season_id = %s AND week_id = %s''', (home_score, away_score, season_id, week_id))
             conn.commit()
             flash('Added score!', 'success')
             return redirect(url_for('setup_week', week_id=week_id, season_id=season_id))
@@ -500,10 +500,10 @@ def edit_score(season_id, week_id):
     cursor = conn.cursor()
 
     if request.method == 'POST':
-        giants = request.form['giants']
-        opponent = request.form['opponent']
+        home_score = request.form['home_score']
+        away_score = request.form['away_score']
         try:
-            cursor.execute('''UPDATE weeks SET giants = %s, opponent = %s WHERE season_id = %s AND week_id = %s''', (giants, opponent, season_id, week_id))
+            cursor.execute('''UPDATE weeks SET home_score = %s, away_score = %s WHERE season_id = %s AND week_id = %s''', (home_score, away_score, season_id, week_id))
             conn.commit()
             flash('Edited score!', 'success')
             return redirect(url_for('setup_week', week_id=week_id, season_id=season_id))
@@ -512,7 +512,7 @@ def edit_score(season_id, week_id):
             flash('Score already exists. Please choose a different one.', 'error')
 
     # Fetch the current score data
-    cursor.execute("SELECT giants, opponent FROM weeks WHERE season_id = %s AND week_id = %s", (season_id, week_id,))
+    cursor.execute("SELECT home_score, away_score FROM weeks WHERE season_id = %s AND week_id = %s", (season_id, week_id,))
     score = cursor.fetchone()
 
     #Get week date data to display
@@ -560,18 +560,18 @@ def update_week_status(season_id, week_id, status):
             flash(f'Error updating week status: {e}', 'error')
 
     if status == 'F':
-        cursor.execute("SELECT giants, opponent, x_axis, y_axis FROM weeks WHERE week_id = %s", (week_id,))
+        cursor.execute("SELECT home_score, away_score, x_axis, y_axis FROM weeks WHERE week_id = %s", (week_id,))
         week_data = cursor.fetchone()
 
-        giants_x = week_data[0]
-        opponent_y = week_data[1]
+        home_score_x = week_data[0]
+        away_score_y = week_data[1]
         all_x_values = week_data[2]
         all_y_values = week_data[3]
 
         x_values = [int(char) for char in all_x_values]
         y_values = [int(char) for char in all_y_values]
-        actual_x = x_values.index(giants_x)
-        actual_y = y_values.index(opponent_y)
+        actual_x = x_values.index(home_score_x)
+        actual_y = y_values.index(away_score_y)
         winning_index = actual_y * 10 + (actual_x + 1)
         
         cursor.execute("UPDATE weeks SET winning_index = %s WHERE week_id = %s", (winning_index, week_id))

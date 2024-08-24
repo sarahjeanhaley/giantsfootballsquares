@@ -8,35 +8,70 @@
 
 <h2>Grid for Week {{ week_id }} of Season {{ season_id }}</h2>
 
+Winning Numbers {{ week_data[0] }}
+
 <!-- Displaying the Grid with 1-based indexing -->
 
+        <table class="table table-bordered table-hover text-center">
+            <thead>
+                <tr>
+                    <th></th><!-- Top-left empty cell -->
+                        {% for col in range(1, 11) %}
+                            {% if x_axis[col-1] == week_data[0] %}
+                                <th class="table-success">
+                            {% else %}
+                                <th>
+                            {% endif %}
+                                {% if x_axis[col-1] == week_data[0] %}
+                                    <span class="text-success">
+                                        {{ x_axis[col-1] }}
+                                    </span>
+                                {% else %}
+                                    {{ x_axis[col-1] }}
+                                {% endif %}
+                            </th><!-- X axis numbers -->
+                        {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in range(1, 11) %}
+                    <tr>
+                        {% if y_axis[row-1] == week_data[1] %}
+                            <th class="table-success">
+                        {% else %}
+                            <th>
+                        {% endif %}
 
-<table class="table table-bordered table-hover text-center">
-    <thead>
-        <tr>
-            <th></th><!-- Top-left empty cell -->
-                {% for col in range(1, 11) %}
-                    <th>{{ x_axis[col-1] }}</th><!-- X axis numbers -->
+                            {% if y_axis[row-1] == week_data[1] %}
+                                <span class="text-success">
+                                    {{ y_axis[row-1] }}
+                                </span>
+                            {% else %}
+                                {{ y_axis[row-1] }}
+                            {% endif %}
+                        </th>
+                        <!-- Y axis number -->
+                            {% for col in range(1, 11) %} 
+                            {% set index = (row - 1) * 10 + col %} 
+                                {% if (index >= 21 and index <= 40) or (index >= 61 and index <= 80) %}
+                                    <td class="table-warning">
+                                {% elif index == week_data[3] %}
+                                    <td class="table-success">
+                                {% else %}
+                                    <td>
+                                {% endif %}
+                                    {% if index == week_data[3] %}
+                                        <span class="text-success">
+                                            {{ grid_dict.get(index, '') }}
+                                        </span>
+                                    {% else %}
+                                        {{ grid_dict.get(index, '') }}
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                    </tr>
                 {% endfor %}
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in range(1, 11) %}
-            <tr>
-                <th>
-                    {{ y_axis[row-1] }}
-                </th>
-                <!-- Y axis number -->
-                    {% for col in range(1, 11) %} 
-                    {% set index = (row - 1) * 10 + col %} 
-                        <td>
-                            {{ grid_dict.get(index, '') }}
-                        </td>
-                    {% endfor %}
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
+            </tbody>
+        </table>
 
 {% endblock %}

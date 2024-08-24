@@ -25,7 +25,7 @@
         <tr>
                 {% for col in range(grid_size) %}
                     {% set index = row * grid_size + col %}
-                    <td {% if row == 2 or row == 3 or row == 6 or row == 7 %} style="background-color: yellow;" {% endif %}>
+                    <td {% if row == 2 or row == 3 or row == 6 or row == 7 %} class="table-warning" {% endif %}>
                         <div class="square">
                             {% if index + 1 in assigned_spots %}
                                 <span>{{ assigned_spots[index + 1] }}</span>
