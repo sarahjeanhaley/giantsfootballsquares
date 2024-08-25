@@ -29,21 +29,20 @@
 <body>
     <!-- Header -->
     <header class="bg-primary text-white text-center py-3">
-        <h1>Giants Football Squares</h1>
+        <h1>Giants Football Squares</h1>{% if 'username' in session %}
         <nav class="nav justify-content-center">
-            <a class="nav-link text-white" href="{{ url_for('home') }}">Home</a>
 
-            {% if 'username' in session %}
+
+            <a class="nav-link text-white" href="{{ url_for('home') }}">Home</a>
             <a class="nav-link text-white" href="{{ url_for('register') }}">Users</a>
             <a class="nav-link text-white" href="{{ url_for('add_season') }}">Seasons</a>
             <a class="nav-link text-white" href="{{ url_for('add_part') }}">Participants</a>
             <a class="nav-link text-white" href="{{ url_for('logout') }}">Logout</a>
-            {% else %}
-            <a class="nav-link text-white" href="{{ url_for('login') }}">Login</a>
-            {% endif %}
+ 
+        
 
 
-        </nav>
+        </nav> {% endif %}
     </header>
 
     <!-- Main Content -->
@@ -53,7 +52,9 @@
 
     <!-- Footer -->
     <footer class="bg-dark text-white text-center py-3 mt-4">
-        <p>&copy; 2024 Sarah Haley sarah@sarahjhaley.com</p>
+        
+         {% if 'username' not in session %}<a class="nav-link text-white" href="{{ url_for('login') }}">Administrator Login</a> {% endif %}
+ <p>&copy;2024 Sarah Haley. All Rights Reserved.</p>
         <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="sarahhaley" data-color="#d6d6d6" data-emoji="☕"  data-font="Poppins" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#FFDD00" ></script>
     </footer>
 
