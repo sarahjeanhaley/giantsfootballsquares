@@ -41,7 +41,45 @@ def login_required(f):
 ##############################################################################
 @app.route('/')
 def home():
-    return render_template('index.html')
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot, pot_balance FROM seasons where season_status = 'C'")
+    seasons = cursor.fetchall() 
+
+    season_data = []
+
+    for season in seasons:
+        season_id = season[0] 
+        season_year = season[1] 
+        season_desc = season[2]
+        season_status = season[3] 
+        weekly_pot = season[4]
+        pot_balance = season[5]
+
+        cursor.execute('''SELECT w.week_id, w.season_week_number, w.game_date, w.home_score, 
+                       w.away_score, w.status, w.winning_index, w.winning_amount, p.name 
+                       FROM weeks w
+                       left join grid_spots g on w.winning_index = g.grid_index and w.season_id = g.seasonid 
+                       left join participants p on g.user_part_id = p.part_id
+                       where season_id = %s
+                       ''', (season_id,))
+        weeks_info = cursor.fetchall()
+        weeks_info = sorted(weeks_info, key=lambda x: x[1])
+
+        # Append season data along with its weeks to season_data list
+        season_data.append({
+            'season_id': season_id,
+            'season_year': season_year,
+            'season_desc': season_desc,
+            'season_status': season_status,
+            'weekly_pot': weekly_pot,
+            'pot_balance': pot_balance,
+            'weeks': weeks_info
+        })
+
+    conn.close()
+    return render_template('index.html', season_data=season_data)
 
 ##############################################################################
 #######     Login   ** Updated to postgres
@@ -575,10 +613,28 @@ def update_week_status(season_id, week_id, status):
         winning_index = actual_y * 10 + (actual_x + 1)
         
         cursor.execute("UPDATE weeks SET winning_index = %s WHERE week_id = %s", (winning_index, week_id))
-        conn.commit()   
+        conn.commit()
+        cursor.execute("select weekly_pot, pot_balance from seasons where season_id = %s", (season_id,))
+        pot_data = cursor.fetchone()
+        if pot_data[0]:
+            weekly_pot = pot_data[0]
+        else:
+            weekly_pot = 0
+        if pot_data[1]:
+            pot_balance = pot_data[1]
+        else:
+            pot_balance = 0
 
         if (winning_index >= 21 and winning_index <= 40) or (winning_index >= 61 and winning_index <= 80): 
-            print("carry over")
+            pot_balance = pot_balance + weekly_pot
+            cursor.execute("update seasons set pot_balance = %s where season_id = %s", (pot_balance, season_id))
+            cursor.execute("update weeks set winning_amount = 0 where week_id = %s", (week_id, ))
+            conn.commit()
+        else:
+            winning_amount = weekly_pot + pot_balance
+            cursor.execute("update seasons set pot_balance = 0 where season_id = %s", (season_id, ))
+            cursor.execute("update weeks set winning_amount = %s where week_id = %s", (winning_amount, week_id))
+            conn.commit()
 
     cursor.close()
     conn.close()
