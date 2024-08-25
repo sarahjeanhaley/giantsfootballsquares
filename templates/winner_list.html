@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Season Winners{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Section: Weekly Winners -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Weekly Winners</h2>
+        </div>
+        <div class="card-body">
+            {% if week_winner_list %}
+                <ul class="list-group">
+                    {% for week in week_winner_list %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Week {{ week[1] }} - {{ week[2].strftime('%Y-%m-%d') }}: {{ week[5] if week[5] else 'No Winner' }}
+                            <span class="badge bg-primary rounded-pill">${{ week[4] }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No winners recorded for this season's weeks.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Section: Total Winnings -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Total Winnings</h2>
+        </div>
+        <div class="card-body">
+            {% if total_winnings %}
+                <ul class="list-group">
+                    {% for winner in total_winnings %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ winner[0] }}
+                            <span class="badge bg-success rounded-pill">${{ winner[1] }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No participants have won any amounts yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

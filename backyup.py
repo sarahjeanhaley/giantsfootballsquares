@@ -333,23 +333,23 @@ def edit_season(season_id):
 ##############################################################################
 #######     delete season
 ##############################################################################
-@app.route('/delete_season/<int:season_id>', methods=['GET', 'POST'])
-@login_required
-def delete_season(season_id):
-    conn = get_db()
-    cursor = conn.cursor()
+# @app.route('/delete_season/<int:season_id>', methods=['GET', 'POST'])
+# @login_required
+# def delete_season(season_id):
+#     conn = get_db()
+#     cursor = conn.cursor()
 
-    try:
-        cursor.execute("DELETE FROM seasons WHERE season_id = %s", (season_id,))
-        cursor.execute("DELETE FROM weeks WHERE season_id = %s", (season_id,))
-        conn.commit()
-        flash('Season deleted successfully!', 'success')
-    except Exception as e:
-        flash(f'Error deleting season: {str(e)}', 'error')
+#     try:
+#         cursor.execute("DELETE FROM season WHERE season_id = %s", (season_id,))
+#         cursor.execute("DELETE FROM weeks WHERE season_id = %s", (season_id,))
+#         conn.commit()
+#         flash('Season deleted successfully!', 'success')
+#     except Exception as e:
+#         flash(f'Error deleting season: {str(e)}', 'error')
     
-    conn.close()
+#     conn.close()
 
-    return redirect(url_for('add_season'))
+#     return redirect(url_for('add_season'))
 
 ##############################################################################
 #######     Update season status
