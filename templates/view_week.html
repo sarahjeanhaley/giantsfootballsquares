@@ -17,13 +17,14 @@
 
         <table class="table table-bordered table-hover text-center">
             <thead>
+                <tr class="table-light"><th  class="table-light" colspan="2" rowspan="2"></th><th colspan="11">HOME</th></tr>
                 <tr>
-                    <th></th><!-- Top-left empty cell -->
+                    <!-- Top-left empty cell -->
                         {% for col in range(1, 11) %}
                             {% if x_axis[col-1] == week_data[0] %}
                                 <th class="table-success">
                             {% else %}
-                                <th>
+                                <th class="table-light">
                             {% endif %}
                                 {% if x_axis[col-1] == week_data[0] %}
                                     <span class="text-success">
@@ -38,11 +39,15 @@
             </thead>
             <tbody>
                 {% for row in range(1, 11) %}
+                {% if row == 1 %}
+                    <!-- Add the 'AWAY' column on the first row only and make it span 11 rows -->
+                    <th rowspan="11" class="table-light align-middle">A<br>W<br>A<br>Y</th>
+                {% endif %}
                     <tr>
                         {% if y_axis[row-1] == week_data[1] %}
                             <th class="table-success">
                         {% else %}
-                            <th>
+                            <th class="table-light">
                         {% endif %}
 
                             {% if y_axis[row-1] == week_data[1] %}
