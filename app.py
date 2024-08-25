@@ -62,7 +62,7 @@ def home():
                        FROM weeks w
                        left join grid_spots g on w.winning_index = g.grid_index and w.season_id = g.seasonid 
                        left join participants p on g.user_part_id = p.part_id
-                       where season_id = %s
+                       where season_id = %s and w.status in ('C','F')
                        ''', (season_id,))
         weeks_info = cursor.fetchall()
         weeks_info = sorted(weeks_info, key=lambda x: x[1])
