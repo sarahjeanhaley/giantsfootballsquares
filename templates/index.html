@@ -9,8 +9,8 @@
 <div class="card mb-4">
     <div class="card-body">
         <h2 class="card-title">Season {{ season.season_year }} - {{ season.season_desc }}</h2>
-        <p>Weekly Pot: ${{ season.weekly_pot }} Current Caryrover Balance: ${{ season.pot_balance }}
-             <a href="{{ url_for('winner_list', season_id=season.season_id) }}" class="btn btn-sm btn-primary me-2">View Winners</a></p>
+        <p><b></b>Weekly Pot:</b> ${{ season.weekly_pot }} {% if  season.pot_balance == "None" %}Current Caryrover Balance: ${{ season.pot_balance }} {% endif %}
+             <br><a href="{{ url_for('winner_list', season_id=season.season_id) }}" class="btn btn-sm btn-success me-6">View Winners</a></p>
         <h3 class="mt-3">Weeks</h3>
         <div class="container">
             <div class="row">

@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from functools import wraps
-import sqlite3
 import random
 import psycopg2
 import os
@@ -17,12 +16,6 @@ DATABASE_URL = 'postgresql://uchhf1qoegiojq:p439a8000da39297b69db023b6195f279ee5
 def get_db():
     conn = psycopg2.connect(DATABASE_URL)
     return conn
-
-## local sqlitedb info, commented out - moving to postgres on heroku
-# DATABASE = 'database.db'
-#def get_db():
-#     conn = sqlite3.connect(DATABASE)
-#     return conn
 
 ##############################################################################
 #######     **Not a Page**    Require login function
@@ -178,7 +171,7 @@ def add_part():
             cursor.execute("INSERT INTO participants (name) VALUES (%s)", (name,))
             conn.commit()
             flash('Added participant!', 'success')
-        except sqlite3.IntegrityError:
+        except psycopg2.IntegrityError:
             flash('Participant already exists. Please choose a different one.', 'error')
         return redirect(url_for('add_part'))
     
@@ -287,7 +280,7 @@ def add_season():
             conn.commit()
             flash('Added season!', 'success')
             return redirect(url_for('add_season'))
-        except sqlite3.IntegrityError:
+        except psycopg2.IntegrityError:
             flash('Season already exists. Please choose a different one.', 'error')
         
     # Query the list of seasons
@@ -435,7 +428,7 @@ def assign(season_id):
         if len(selected_squares) != 5:
             flash('You must select exactly 5 squares.', 'error')
         else:
-            row_counts = [int(square) // grid_size for square in selected_squares]
+            row_counts = [(int(square) - 1) // grid_size for square in selected_squares]
             middle_rows = [2, 3, 6, 7]  # 0-based index for rows 3, 4, 7, and 8
         
             # Count the number of squares in the middle rows
@@ -443,9 +436,10 @@ def assign(season_id):
         
             # Validate that at least two squares are in the middle rows (3, 4, 7, 8)
             if middle_row_count < 2:
+                print(selected_squares)
+                print(row_counts)
                 flash('At least two squares must be in rows 3, 4, 7, or 8.', 'error')
             else:
-                # Save the selected squares to the database
                 try:
                     for square in selected_squares:
                         cursor.execute(
@@ -537,7 +531,7 @@ def view_week(season_id, week_id):
     grid_data = cursor.fetchall()
     grid_dict = {index: name for name, index in grid_data}
 
-    cursor.execute('''SELECT home_score, away_score, status, winning_index, winning_amount FROM weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
+    cursor.execute('''SELECT home_score, away_score, status, winning_index, winning_amount, season_week_number FROM weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
     week_data = cursor.fetchone()
 
     conn.close()
@@ -565,7 +559,7 @@ def enter_score(season_id, week_id):
             flash('Added score!', 'success')
             return redirect(url_for('setup_week', week_id=week_id, season_id=season_id))
         
-        except sqlite3.IntegrityError:
+        except psycopg2.IntegrityError:
             flash('Score already exists. Please choose a different one.', 'error')
 
     conn.close()
@@ -590,7 +584,7 @@ def edit_score(season_id, week_id):
             flash('Edited score!', 'success')
             return redirect(url_for('setup_week', week_id=week_id, season_id=season_id))
         
-        except sqlite3.IntegrityError:
+        except psycopg2.IntegrityError:
             flash('Score already exists. Please choose a different one.', 'error')
 
     # Fetch the current score data
