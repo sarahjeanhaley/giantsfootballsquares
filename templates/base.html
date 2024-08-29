@@ -1,34 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-VSMT62T7JV"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VSMT62T7JV"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-VSMT62T7JV');
+    </script>
 
-  gtag('config', 'G-VSMT62T7JV');
-</script>
     <meta name="google-adsense-account" content="ca-pub-6960807355856881">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Giants Football Squares{% endblock %}</title>
+    
     <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
     <style>
         :root {
-            --bs-primary: #0B2265 !important; /* Replace with your custom color */
+            --bs-primary: #0B2265 !important;
             --bs-primary-rgb: 11, 34, 101 !important;
-            --bs-secondary: #A5ACAF; /* Replace with your custom color */
-            --bs-success: #28a745; /* Replace with your custom color */
-            --bs-danger: #A71930; /* Replace with your custom color */
-            --bs-warning: #ffc107; /* Replace with your custom color */
-            --bs-info: #17a2b8; /* Replace with your custom color */
-            --bs-light: #f8f9fa; /* Replace with your custom color */
-            --bs-dark: #343a40; /* Replace with your custom color */
+            --bs-secondary: #A5ACAF;
+            --bs-success: #28a745;
+            --bs-danger: #A71930;
+            --bs-warning: #ffc107;
+            --bs-info: #17a2b8;
+            --bs-light: #f8f9fa;
+            --bs-dark: #343a40;
         }
     </style>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media (max-width: 768px) {
+            table th, table td {
+                padding: 8px;
+                font-size: 12px;
+            }
+        }
+        @media (max-width: 576px) {
+            table th, table td {
+                padding: 5px;
+                font-size: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -52,10 +69,11 @@
 
     <!-- Footer -->
     <footer class="bg-dark text-white text-center py-3 mt-4">
-        
-         {% if 'username' not in session %}<a class="nav-link text-white" href="{{ url_for('login') }}">Administrator Login</a> {% endif %}
- <p>&copy;2024 Sarah Haley. All Rights Reserved.</p>
-        <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="sarahhaley" data-color="#d6d6d6" data-emoji="☕"  data-font="Poppins" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#FFDD00" ></script>
+        {% if 'username' not in session %}
+            <a class="nav-link text-white" href="{{ url_for('login') }}">Administrator Login</a>
+        {% endif %}
+        <p>&copy;2024 Sarah Haley. All Rights Reserved.</p>
+        <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="sarahhaley" data-color="#d6d6d6" data-emoji="☕"  data-font="Poppins" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#FFDD00"></script>
     </footer>
 
     <!-- Bootstrap JS (optional) -->

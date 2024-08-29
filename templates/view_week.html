@@ -2,9 +2,7 @@
 
 {% block title %}View Week{% endblock %}
 
-
 {% block content %}
-
 
 <h2>Grid for Week {{ week_data[5] }}</h2>
 
@@ -14,72 +12,76 @@
 {% endif %}
 
 <!-- Displaying the Grid with 1-based indexing -->
-
-        <table class="table table-bordered table-hover text-center">
-            <thead>
-                <tr class="table-light"><th  class="table-light" colspan="2" rowspan="2"></th><th colspan="11">HOME</th></tr>
+<div class="table-responsive">
+    <table class="table table-bordered table-hover text-center">
+        <thead>
+            <tr class="table-light">
+                <th class="table-light" colspan="2" rowspan="2"></th>
+                <th colspan="11">HOME</th>
+            </tr>
+            <tr>
+                <!-- Top-left empty cell -->
+                {% for col in range(1, 11) %}
+                    {% if x_axis[col-1] == week_data[0] %}
+                        <th class="table-success">
+                    {% else %}
+                        <th class="table-light">
+                    {% endif %}
+                        {% if x_axis[col-1] == week_data[0] %}
+                            <span class="text-success">
+                                <b>{{ x_axis[col-1] }}</b>
+                            </span>
+                        {% else %}
+                            {{ x_axis[col-1] }}
+                        {% endif %}
+                    </th><!-- X axis numbers -->
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in range(1, 11) %}
+            {% if row == 1 %}
+                <!-- Add the 'AWAY' column on the first row only and make it span 11 rows -->
+                <th rowspan="11" class="table-light align-middle">A<br>W<br>A<br>Y</th>
+            {% endif %}
                 <tr>
-                    <!-- Top-left empty cell -->
-                        {% for col in range(1, 11) %}
-                            {% if x_axis[col-1] == week_data[0] %}
-                                <th class="table-success">
+                    {% if y_axis[row-1] == week_data[1] %}
+                        <th class="table-success">
+                    {% else %}
+                        <th class="table-light">
+                    {% endif %}
+
+                        {% if y_axis[row-1] == week_data[1] %}
+                            <span class="text-success">
+                                {{ y_axis[row-1] }}
+                            </span>
+                        {% else %}
+                            {{ y_axis[row-1] }}
+                        {% endif %}
+                    </th>
+                    <!-- Y axis number -->
+                        {% for col in range(1, 11) %} 
+                        {% set index = (row - 1) * 10 + col %} 
+                            {% if (index >= 21 and index <= 40) or (index >= 61 and index <= 80) %}
+                                <td class="table-warning">
+                            {% elif index == week_data[3] %}
+                                <td class="table-success">
                             {% else %}
-                                <th class="table-light">
+                                <td>
                             {% endif %}
-                                {% if x_axis[col-1] == week_data[0] %}
+                                {% if index == week_data[3] %}
                                     <span class="text-success">
-                                        <b>{{ x_axis[col-1] }}</b>
+                                        <b>{{ grid_dict.get(index, '') }}</b>
                                     </span>
                                 {% else %}
-                                    {{ x_axis[col-1] }}
+                                    {{ grid_dict.get(index, '') }}
                                 {% endif %}
-                            </th><!-- X axis numbers -->
+                            </td>
                         {% endfor %}
                 </tr>
-            </thead>
-            <tbody>
-                {% for row in range(1, 11) %}
-                {% if row == 1 %}
-                    <!-- Add the 'AWAY' column on the first row only and make it span 11 rows -->
-                    <th rowspan="11" class="table-light align-middle">A<br>W<br>A<br>Y</th>
-                {% endif %}
-                    <tr>
-                        {% if y_axis[row-1] == week_data[1] %}
-                            <th class="table-success">
-                        {% else %}
-                            <th class="table-light">
-                        {% endif %}
-
-                            {% if y_axis[row-1] == week_data[1] %}
-                                <span class="text-success">
-                                    {{ y_axis[row-1] }}
-                                </span>
-                            {% else %}
-                                {{ y_axis[row-1] }}
-                            {% endif %}
-                        </th>
-                        <!-- Y axis number -->
-                            {% for col in range(1, 11) %} 
-                            {% set index = (row - 1) * 10 + col %} 
-                                {% if (index >= 21 and index <= 40) or (index >= 61 and index <= 80) %}
-                                    <td class="table-warning">
-                                {% elif index == week_data[3] %}
-                                    <td class="table-success">
-                                {% else %}
-                                    <td>
-                                {% endif %}
-                                    {% if index == week_data[3] %}
-                                        <span class="text-success">
-                                            <b>{{ grid_dict.get(index, '') }}</b>
-                                        </span>
-                                    {% else %}
-                                        {{ grid_dict.get(index, '') }}
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 {% endblock %}

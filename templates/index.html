@@ -8,34 +8,36 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <h2 class="card-title">Season {{ season.season_year }} - {{ season.season_desc }}</h2>
-        <p><b></b>Weekly Pot:</b> ${{ season.weekly_pot }} {% if  season.pot_balance == "None" %}Current Caryrover Balance: ${{ season.pot_balance }} {% endif %}
-             <br><a href="{{ url_for('winner_list', season_id=season.season_id) }}" class="btn btn-sm btn-success me-6">View Winners</a></p>
+        <h2 class="card-title">Season {{ season.season_year }} <br> {{ season.season_desc }}</h2>
+        <p><b>Weekly Pot:</b> ${{ season.weekly_pot }}<br>
+        <b>Current Carryover Balance:</b> ${{ season.pot_balance }}<br>
+        <a href="{{ url_for('winner_list', season_id=season.season_id) }}" class="btn btn-sm btn-success me-6">View Winners</a>
+        </p>
         <h3 class="mt-3">Weeks</h3>
         <div class="container">
             <div class="row">
                 {% for week in season.weeks %}
                     <div class="col-12 mb-3">
-
-                        {% if week[5] == 'C' %}
-                        <div class="d-flex justify-content-between align-items-center bg-success bg-opacity-50 p-2 border rounded">
-                        {% else %}
-                        <div class="d-flex justify-content-between align-items-center bg-light p-2 border rounded">
-                            {% endif %}
-                                Week {{ week[1] }} | 
-                                Date: {{ week[2] }} | 
+                        <div class="d-flex justify-content-between align-items-center p-2 border rounded 
+                            {% if week[5] == 'C' %}
+                                bg-success bg-opacity-50
+                            {% else %}
+                                bg-light
+                            {% endif %}">
+                            <div>
+                                Week {{ week[1] }} | Date: {{ week[2] }}
                                 {% if week[5] == 'C' %}
-                                    Current Week 
+                                    Current Week
                                 {% else %}
                                     {% if week[7] == 0 %}
-                                    No Winner 
+                                        No Winner
                                     {% else %}
-                                    Winning Amount: ${{ week[7] }} | Winning Spot: {{ week[8] }} 
+                                        Winning Amount: ${{ week[7] }} | Winning Spot: {{ week[8] }}
                                     {% endif %}
                                 {% endif %}
-                            <div>
-                                <a href="{{ url_for('view_week', season_id=season.season_id, week_id=week[0]) }}" class="btn btn-sm btn-primary me-2">View Week</a>
-                                
+                            </div>
+                            <div class="mt-2 mt-sm-0">
+                                <a href="{{ url_for('view_week', season_id=season.season_id, week_id=week[0]) }}" class="btn btn-sm btn-primary">View Week</a>
                             </div>
                         </div>
                     </div>

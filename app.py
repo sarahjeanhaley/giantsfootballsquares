@@ -37,7 +37,7 @@ def home():
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot, pot_balance FROM seasons where season_status = 'C'")
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot, coalesce(pot_balance,0) FROM seasons where season_status = 'C'")
     seasons = cursor.fetchall() 
 
     season_data = []
@@ -51,7 +51,7 @@ def home():
         pot_balance = season[5]
 
         cursor.execute('''SELECT w.week_id, w.season_week_number, w.game_date, w.home_score, 
-                       w.away_score, w.status, w.winning_index, w.winning_amount, p.name 
+                       w.away_score, w.status, w.winning_index, coalesce(w.winning_amount,0), p.name 
                        FROM weeks w
                        left join grid_spots g on w.winning_index = g.grid_index and w.season_id = g.seasonid 
                        left join participants p on g.user_part_id = p.part_id
