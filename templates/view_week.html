@@ -10,11 +10,18 @@
         vertical-align: middle; /* Vertical centering */
     }
 </style>
-<h2>Grid for Week {{ week_data[5] }}</h2>
-
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">Grid for Week {{ week_data[5] }}</h2>
+        <button type="button" class="btn btn-secondary" onclick="window.history.back();">
+            Back
+        </button>
+    </div>
+</div>
+<br>
 {% if week_data[2] == 'F' or week_data[2] == 'A' %}
     <b>Winning Numbers:</b> Home {{ week_data[0] }}, Away {{ week_data[1] }}<br>
-    <b>Winning Amount:</b>  ${{ week_data[4] }}
+    <b>Winning Amount:</b>  ${{ week_data[4] }}<br>
 {% endif %}
 
 <!-- Displaying the Grid with 1-based indexing -->
