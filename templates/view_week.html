@@ -3,7 +3,13 @@
 {% block title %}View Week{% endblock %}
 
 {% block content %}
-
+<style>
+    .table th, .table td {
+        padding: 0;
+        text-align: center; /* Horizontal centering */
+        vertical-align: middle; /* Vertical centering */
+    }
+</style>
 <h2>Grid for Week {{ week_data[5] }}</h2>
 
 {% if week_data[2] == 'F' or week_data[2] == 'A' %}
