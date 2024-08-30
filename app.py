@@ -37,7 +37,7 @@ def home():
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot, coalesce(pot_balance,0) FROM seasons where season_status = 'C'")
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot, coalesce(pot_balance,0) FROM public.seasons where season_status = 'C'")
     seasons = cursor.fetchall() 
 
     season_data = []
@@ -52,9 +52,9 @@ def home():
 
         cursor.execute('''SELECT w.week_id, w.season_week_number, w.game_date, w.home_score, 
                        w.away_score, w.status, w.winning_index, coalesce(w.winning_amount,0), p.name 
-                       FROM weeks w
-                       left join grid_spots g on w.winning_index = g.grid_index and w.season_id = g.seasonid 
-                       left join participants p on g.user_part_id = p.part_id
+                       FROM public.weeks w
+                       left join public.grid_spots g on w.winning_index = g.grid_index and w.season_id = g.seasonid 
+                       left join public.participants p on g.user_part_id = p.part_id
                        where season_id = %s and w.status in ('C','F')
                        ''', (season_id,))
         weeks_info = cursor.fetchall()
@@ -85,7 +85,7 @@ def login():
 
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT trim(username), trim(password) FROM app_user WHERE username = %s", (username,))
+        cursor.execute("SELECT trim(username), trim(password) FROM public.app_user WHERE username = %s", (username,))
         user = cursor.fetchone()
 
         if user:
@@ -117,7 +117,7 @@ def register():
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
         try:
-            cursor.execute("INSERT INTO app_user (username, password) VALUES (%s, %s)", (username, hashed_password))
+            cursor.execute("INSERT INTO public.app_user (username, password) VALUES (%s, %s)", (username, hashed_password))
             conn.commit()
             flash('Registration successful!', 'success')
             return redirect(url_for('home'))
@@ -125,7 +125,7 @@ def register():
             flash('Username already exists. Please choose a different one.', 'error')
 
     # Query the list of users
-    cursor.execute("SELECT trim(username) FROM app_user")
+    cursor.execute("SELECT trim(username) FROM public.app_user")
     user_list = cursor.fetchall()
     conn.close()
 
@@ -144,7 +144,7 @@ def edit_user(username):
         password = request.form['password']
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         try:
-            cursor.execute("UPDATE app_user SET password = %s WHERE username = %s", (hashed_password, username))
+            cursor.execute("UPDATE public.app_user SET password = %s WHERE username = %s", (hashed_password, username))
             conn.commit()
             flash('User updated successfully!', 'success')
         except Exception as e:
@@ -168,7 +168,7 @@ def add_part():
         name = request.form['name']
         
         try:
-            cursor.execute("INSERT INTO participants (name) VALUES (%s)", (name,))
+            cursor.execute("INSERT INTO public.participants (name) VALUES (%s)", (name,))
             conn.commit()
             flash('Added participant!', 'success')
         except psycopg2.IntegrityError:
@@ -176,7 +176,7 @@ def add_part():
         return redirect(url_for('add_part'))
     
     # Query the list of participants
-    cursor.execute("SELECT part_id, trim(name) FROM participants")
+    cursor.execute("SELECT part_id, trim(name) FROM public.participants")
     participants = cursor.fetchall()
 
     participant_count = len(participants)
@@ -198,7 +198,7 @@ def edit_part(part_id):
         new_name = request.form['name']
         
         try:
-            cursor.execute("UPDATE participants SET name = %s WHERE part_id = %s", (new_name, part_id))
+            cursor.execute("UPDATE public.participants SET name = %s WHERE part_id = %s", (new_name, part_id))
             conn.commit()
             flash('Participant updated successfully!', 'success')
         except Exception as e:
@@ -206,7 +206,7 @@ def edit_part(part_id):
         return redirect(url_for('add_part'))
 
     # Fetch the current participant details
-    cursor.execute("SELECT trim(name) FROM participants WHERE part_id = %s", (part_id,))
+    cursor.execute("SELECT trim(name) FROM public.participants WHERE part_id = %s", (part_id,))
     participant = cursor.fetchone()
 
     conn.close()
@@ -223,7 +223,7 @@ def delete_part(part_id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("DELETE FROM participants WHERE part_id = %s", (part_id,))
+        cursor.execute("DELETE FROM public.participants WHERE part_id = %s", (part_id,))
         conn.commit()
         flash('Participant deleted successfully!', 'success')
     except Exception as e:
@@ -243,16 +243,16 @@ def winner_list(season_id):
 
     ## Get list of weeks with the winner of the week and the amount
     cursor.execute('''SELECT w.week_id, w.season_week_number, w.game_date, w.winning_index, w.winning_amount, p.name 
-                       FROM weeks w
-                       left join grid_spots g on w.winning_index = g.grid_index and w.season_id = g.seasonid 
-                       left join participants p on g.user_part_id = p.part_id
+                       FROM public.weeks w
+                       left join public.grid_spots g on w.winning_index = g.grid_index and w.season_id = g.seasonid 
+                       left join public.participants p on g.user_part_id = p.part_id
                        where season_id = %s and w.status in ('C','F') and w.winning_amount > 0''', (season_id,))
     week_winner_list = cursor.fetchall()
     ## Get list of winners, summed up for their amoutns won
     cursor.execute('''select p.name, sum(w.winning_amount)
-                    from participants p
-					left join grid_spots g on g.user_part_id = p.part_id
-                    left join weeks w on w.winning_index = g.grid_index and w.season_id = g.seasonid 
+                    from public.participants p
+					left join public.grid_spots g on g.user_part_id = p.part_id
+                    left join public.weeks w on w.winning_index = g.grid_index and w.season_id = g.seasonid 
                     where w.season_id = %s and w.winning_amount > 0
                     group by p.name
                     ''', (season_id,))
@@ -276,7 +276,7 @@ def add_season():
         weeklypot = request.form['weeklypot']
         
         try:
-            cursor.execute("INSERT INTO seasons (season_year, season_desc, weekly_pot) VALUES (%s, %s, %s)", (seasonyear, seasondesc, weeklypot))
+            cursor.execute("INSERT INTO public.seasons (season_year, season_desc, weekly_pot) VALUES (%s, %s, %s)", (seasonyear, seasondesc, weeklypot))
             conn.commit()
             flash('Added season!', 'success')
             return redirect(url_for('add_season'))
@@ -284,7 +284,7 @@ def add_season():
             flash('Season already exists. Please choose a different one.', 'error')
         
     # Query the list of seasons
-    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot FROM seasons")
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot FROM public.seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
 
     conn.close()
@@ -307,7 +307,7 @@ def edit_season(season_id):
         weeklypot = request.form['weeklypot']
         try:
             # Corrected SQL syntax, using only one SET keyword
-            cursor.execute("UPDATE seasons SET season_year = %s, season_desc = %s, weekly_pot = %s WHERE season_id = %s", (seasonyear, seasondesc, weeklypot, season_id))
+            cursor.execute("UPDATE public.seasons SET season_year = %s, season_desc = %s, weekly_pot = %s WHERE season_id = %s", (seasonyear, seasondesc, weeklypot, season_id))
             conn.commit()
             flash('Season updated successfully!', 'success')
         except Exception as e:
@@ -315,7 +315,7 @@ def edit_season(season_id):
         return redirect(url_for('add_season'))
 
     # Query the season data
-    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot FROM seasons WHERE season_id = %s", (season_id,))
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status, weekly_pot FROM public.seasons WHERE season_id = %s", (season_id,))
     season = cursor.fetchone()  # Fetch the single row as a tuple
 
     cursor.close()
@@ -333,8 +333,8 @@ def delete_season(season_id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("DELETE FROM seasons WHERE season_id = %s", (season_id,))
-        cursor.execute("DELETE FROM weeks WHERE season_id = %s", (season_id,))
+        cursor.execute("DELETE FROM public.seasons WHERE season_id = %s", (season_id,))
+        cursor.execute("DELETE FROM public.weeks WHERE season_id = %s", (season_id,))
         conn.commit()
         flash('Season deleted successfully!', 'success')
     except Exception as e:
@@ -355,7 +355,7 @@ def update_season_status(season_id, status):
 
 
     try:
-        cursor.execute("UPDATE seasons SET season_status = %s WHERE season_id = %s", (status, season_id))
+        cursor.execute("UPDATE public.seasons SET season_status = %s WHERE season_id = %s", (status, season_id))
         conn.commit()
         flash('Season status updated successfully!', 'success')
     except Exception as e:
@@ -379,7 +379,7 @@ def update_season_status(season_id, status):
     #         flash(f'Error updating season status: {e}', 'error')
 
 
-    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status FROM seasons")
+    cursor.execute("SELECT season_id, season_year, trim(season_desc), season_status FROM public.seasons")
     seasons = cursor.fetchall()  # Fetch all rows as a list of tuples
     seasons = sorted(seasons, key=lambda x: x[0])
 
@@ -406,17 +406,17 @@ def assign(season_id):
     grid_size = 10  # Assuming a 10x10 grid
 
     # Fetch the list of users from the database
-    cursor.execute("SELECT part_id, name FROM participants")
+    cursor.execute("SELECT part_id, name FROM public.participants")
     participants = cursor.fetchall()
 
     # Fetch the specific season details
-    cursor.execute('SELECT season_id, season_year, season_desc FROM seasons WHERE season_id = %s', (season_id,))
+    cursor.execute('SELECT season_id, season_year, season_desc FROM public.seasons WHERE season_id = %s', (season_id,))
     seasons = cursor.fetchone()
 
     # Fetch already assigned spots for this season, including the participant name
     cursor.execute('''SELECT grid_index, participants.name 
-                  FROM grid_spots 
-                  JOIN participants ON grid_spots.user_part_id = participants.part_id 
+                  FROM public.grid_spots 
+                  JOIN public.participants ON public.grid_spots.user_part_id = public.participants.part_id 
                   WHERE seasonID = %s''', (season_id,))
     assigned_spots = {row[0]: row[1] for row in cursor.fetchall()}  # Convert to dictionary
 
@@ -443,7 +443,7 @@ def assign(season_id):
                 try:
                     for square in selected_squares:
                         cursor.execute(
-                            "INSERT INTO grid_spots (seasonID, user_part_id, grid_index) VALUES (%s, %s, %s)",
+                            "INSERT INTO public.grid_spots (seasonID, user_part_id, grid_index) VALUES (%s, %s, %s)",
                             (season_id, user_part_id, int(square))
                         )
                     conn.commit()
@@ -476,7 +476,7 @@ def setup_week(season_id):
         try:
             # Insert the week details and random numbers into the table
             cursor.execute(
-            "INSERT INTO weeks (season_id, season_week_number, game_date, x_axis, y_axis) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO public.weeks (season_id, season_week_number, game_date, x_axis, y_axis) VALUES (%s, %s, %s, %s, %s)",
             (season_id, week_number, game_date, x_string, y_string)
                     )
             conn.commit()
@@ -486,7 +486,7 @@ def setup_week(season_id):
             flash(f'Error setting up week: {str(e)}', 'error')
 
     # Fetch the list of weeks for the selected season
-    cursor.execute("SELECT week_id, season_week_number, game_date, home_score, away_score, status FROM weeks where season_id = %s", (season_id,))
+    cursor.execute("SELECT week_id, season_week_number, game_date, home_score, away_score, status FROM public.weeks where season_id = %s", (season_id,))
     weeks_info = cursor.fetchall()
     weeks_info = sorted(weeks_info, key=lambda x: x[1])
 
@@ -502,10 +502,10 @@ def view_week(season_id, week_id):
     cursor = conn.cursor()
 
     # Fetch X axis and Y axis numbers as individual integers
-    cursor.execute('''SELECT y_axis FROM weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
+    cursor.execute('''SELECT y_axis FROM public.weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
     y_axis = cursor.fetchone()
 
-    cursor.execute('''SELECT x_axis FROM weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
+    cursor.execute('''SELECT x_axis FROM public.weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
     x_axis = cursor.fetchone()
     
     if x_axis is None:
@@ -525,13 +525,13 @@ def view_week(season_id, week_id):
 
     #Fetch the participants' grid positions
     cursor.execute('''SELECT name, grid_index
-                      FROM participants 
-                      LEFT JOIN grid_spots ON part_id = user_part_id
+                      FROM public.participants 
+                      LEFT JOIN public.grid_spots ON part_id = user_part_id
                       WHERE seasonid = %s''', (season_id,))
     grid_data = cursor.fetchall()
     grid_dict = {index: name for name, index in grid_data}
 
-    cursor.execute('''SELECT home_score, away_score, status, winning_index, winning_amount, season_week_number FROM weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
+    cursor.execute('''SELECT home_score, away_score, status, winning_index, winning_amount, season_week_number FROM public.weeks WHERE season_id = %s AND week_id = %s''', (season_id, week_id))
     week_data = cursor.fetchone()
 
     conn.close()
@@ -554,7 +554,7 @@ def enter_score(season_id, week_id):
         home_score = request.form['home_score']
         away_score = request.form['away_score']
         try:
-            cursor.execute('''UPDATE weeks SET home_score = %s, away_score = %s WHERE season_id = %s AND week_id = %s''', (home_score, away_score, season_id, week_id))
+            cursor.execute('''UPDATE public.weeks SET home_score = %s, away_score = %s WHERE season_id = %s AND week_id = %s''', (home_score, away_score, season_id, week_id))
             conn.commit()
             flash('Added score!', 'success')
             return redirect(url_for('setup_week', week_id=week_id, season_id=season_id))
@@ -579,7 +579,7 @@ def edit_score(season_id, week_id):
         home_score = request.form['home_score']
         away_score = request.form['away_score']
         try:
-            cursor.execute('''UPDATE weeks SET home_score = %s, away_score = %s WHERE season_id = %s AND week_id = %s''', (home_score, away_score, season_id, week_id))
+            cursor.execute('''UPDATE public.weeks SET home_score = %s, away_score = %s WHERE season_id = %s AND week_id = %s''', (home_score, away_score, season_id, week_id))
             conn.commit()
             flash('Edited score!', 'success')
             return redirect(url_for('setup_week', week_id=week_id, season_id=season_id))
@@ -588,15 +588,15 @@ def edit_score(season_id, week_id):
             flash('Score already exists. Please choose a different one.', 'error')
 
     # Fetch the current score data
-    cursor.execute("SELECT home_score, away_score FROM weeks WHERE season_id = %s AND week_id = %s", (season_id, week_id,))
+    cursor.execute("SELECT home_score, away_score FROM public.weeks WHERE season_id = %s AND week_id = %s", (season_id, week_id,))
     score = cursor.fetchone()
 
     #Get week date data to display
-    cursor.execute("SELECT season_week_number, game_date FROM weeks WHERE season_id = %s and week_id = %s", (season_id, week_id))
+    cursor.execute("SELECT season_week_number, game_date FROM public.weeks WHERE season_id = %s and week_id = %s", (season_id, week_id))
     week_data = cursor.fetchone()
 
     #Get the season name to display
-    cursor.execute("SELECT season_desc FROM seasons WHERE season_id = %s", (season_id,))
+    cursor.execute("SELECT season_desc FROM public.seasons WHERE season_id = %s", (season_id,))
     season_data = cursor.fetchone()
 
     conn.close()
@@ -614,29 +614,29 @@ def update_week_status(season_id, week_id, status):
 
     if status == 'C':
         try:
-            cursor.execute("UPDATE weeks SET status = 'O' WHERE status = 'C' AND week_id != %s", (week_id,))
-            cursor.execute("UPDATE weeks SET status = %s, winning_index = 0 WHERE week_id = %s", (status, week_id))
+            cursor.execute("UPDATE public.weeks SET status = 'O' WHERE status = 'C' AND week_id != %s", (week_id,))
+            cursor.execute("UPDATE public.weeks SET status = %s, winning_index = 0 WHERE week_id = %s", (status, week_id))
             conn.commit()        
             flash('Week status updated successfully!', 'success')
         except Exception as e:
             flash(f'Error updating week status: {e}', 'error')
     elif status == 'O':
         try:
-            cursor.execute("UPDATE weeks SET status = %s, winning_index = 0 WHERE week_id = %s", (status, week_id))
+            cursor.execute("UPDATE public.weeks SET status = %s, winning_index = 0 WHERE week_id = %s", (status, week_id))
             conn.commit()    
             flash('Week status updated successfully!', 'success')    
         except Exception as e:
             flash(f'Error updating week status: {e}', 'error')
     else:
         try:
-            cursor.execute("UPDATE weeks SET status = %s WHERE week_id = %s", (status, week_id))
+            cursor.execute("UPDATE public.weeks SET status = %s WHERE week_id = %s", (status, week_id))
             conn.commit()        
             flash('Week status updated successfully!', 'success')
         except Exception as e:
             flash(f'Error updating week status: {e}', 'error')
 
     if status == 'F':
-        cursor.execute("SELECT home_score, away_score, x_axis, y_axis FROM weeks WHERE week_id = %s", (week_id,))
+        cursor.execute("SELECT home_score, away_score, x_axis, y_axis FROM public.weeks WHERE week_id = %s", (week_id,))
         week_data = cursor.fetchone()
 
         home_score_x = week_data[0]
@@ -650,9 +650,9 @@ def update_week_status(season_id, week_id, status):
         actual_y = y_values.index(away_score_y)
         winning_index = actual_y * 10 + (actual_x + 1)
         
-        cursor.execute("UPDATE weeks SET winning_index = %s WHERE week_id = %s", (winning_index, week_id))
+        cursor.execute("UPDATE public.weeks SET winning_index = %s WHERE week_id = %s", (winning_index, week_id))
         conn.commit()
-        cursor.execute("select weekly_pot, pot_balance from seasons where season_id = %s", (season_id,))
+        cursor.execute("select weekly_pot, pot_balance from public.seasons where season_id = %s", (season_id,))
         pot_data = cursor.fetchone()
         if pot_data[0]:
             weekly_pot = pot_data[0]
@@ -665,13 +665,13 @@ def update_week_status(season_id, week_id, status):
 
         if (winning_index >= 21 and winning_index <= 40) or (winning_index >= 61 and winning_index <= 80): 
             pot_balance = pot_balance + weekly_pot
-            cursor.execute("update seasons set pot_balance = %s where season_id = %s", (pot_balance, season_id))
-            cursor.execute("update weeks set winning_amount = 0 where week_id = %s", (week_id, ))
+            cursor.execute("update public.seasons set pot_balance = %s where season_id = %s", (pot_balance, season_id))
+            cursor.execute("update public.weeks set winning_amount = 0 where week_id = %s", (week_id, ))
             conn.commit()
         else:
             winning_amount = weekly_pot + pot_balance
-            cursor.execute("update seasons set pot_balance = 0 where season_id = %s", (season_id, ))
-            cursor.execute("update weeks set winning_amount = %s where week_id = %s", (winning_amount, week_id))
+            cursor.execute("update public.seasons set pot_balance = 0 where season_id = %s", (season_id, ))
+            cursor.execute("update public.weeks set winning_amount = %s where week_id = %s", (winning_amount, week_id))
             conn.commit()
 
     cursor.close()
